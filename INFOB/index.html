@@ -1,0 +1,2563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Repository</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --paper:#F2F6FC; --paper-dark:#E1EBFA; --ink:#0369A1; --ink-soft:#0072F5;
+    --stamp:#FF6A00; --brass:#00C853; --shelf:#0072F5; --card:#FFFFFF;
+    --line: rgba(3,105,161,0.18); --shadow: rgba(3,105,161,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(180deg, rgba(3,105,161,0.025) 0px, rgba(3,105,161,0.025) 1px, transparent 1px, transparent 34px),
+      var(--paper);
+    color:var(--ink); font-family:'Inter', sans-serif; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+  a{color:inherit;}
+  :focus-visible{outline:3px solid var(--stamp); outline-offset:2px;}
+  [hidden]{display:none !important;}
+
+  /* ===== Header ===== */
+  header.drawer{background:var(--ink); color:var(--paper); padding:52px 0 40px; position:relative; border-bottom:8px solid var(--brass); transition:border-color .2s;}
+  header.drawer.room{border-bottom-color:var(--shelf);}
+  header.drawer::after{content:""; position:absolute; left:0; right:0; bottom:-8px; height:8px; background:repeating-linear-gradient(90deg, var(--brass) 0 26px, #009624 26px 28px); opacity:.55; transition:background .2s;}
+  header.drawer.room::after{background:repeating-linear-gradient(90deg, var(--shelf) 0 26px, #0052B0 26px 28px);}
+  .drawer-top{display:flex; justify-content:space-between; align-items:flex-start; gap:24px; flex-wrap:wrap;}
+  .brand-eyebrow{font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--brass); margin:0 0 14px;}
+  header.drawer.room .brand-eyebrow{color:var(--shelf);}
+  h1.title{font-family:'Fraunces', serif; font-weight:600; font-size:clamp(34px, 5vw, 56px); line-height:1.02; margin:0 0 14px; letter-spacing:-0.01em;}
+  .title em{font-style:italic; font-weight:400; color:var(--brass);}
+  header.drawer.room .title em{color:#6FA8FF;}
+  .tagline{max-width:520px; font-size:16px; line-height:1.6; color:#CFE0FA; margin:0;}
+  .header-contact{max-width:100%; width:100%; font-size:13px; line-height:1.6; color:#00E676; margin:10px 0 0; font-style:normal; font-weight:400; text-align:center;}
+
+  .role-switch{display:flex; border:1px solid rgba(230,240,255,.35); border-radius:3px; overflow:hidden; flex-shrink:0;}
+  .role-btn{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+    background:transparent; color:var(--paper); border:none; padding:11px 16px; cursor:pointer; opacity:.65;
+    display:flex; align-items:center; gap:6px;
+  }
+  .role-btn svg{width:12px; height:12px;}
+  .role-btn.active{background:rgba(230,240,255,.14); opacity:1;}
+  .role-btn:first-child{border-right:1px solid rgba(230,240,255,.35);}
+
+  .lookup-bar{margin-top:34px; background:rgba(230,240,255,.06); border:1px solid rgba(230,240,255,.22); border-radius:3px; display:flex; align-items:center; gap:10px; padding:14px 16px;}
+  .lookup-bar svg{width:18px; height:18px; color:#6FA8FF; flex-shrink:0;}
+  .lookup-bar input{flex-grow:1; background:transparent; border:none; color:var(--paper); font-family:'Inter',sans-serif; font-size:15px;}
+  .lookup-bar input::placeholder{color:#5C7CB0;}
+  .lookup-bar input:focus{outline:none;}
+
+  .stat-rail{display:flex; gap:0; margin-top:36px; border-top:1px solid rgba(230,240,255,.25); flex-wrap:wrap;}
+  .stat{flex:1; padding:18px 20px 0; border-left:1px solid rgba(230,240,255,.25); min-width:110px;}
+  .stat:first-child{border-left:none;}
+  .stat-num{font-family:'Fraunces', serif; font-size:28px; font-weight:600; color:var(--paper);}
+  .stat-label{font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--brass); margin-top:2px;}
+
+  /* ===== Upload (Filing Desk only) ===== */
+  section.file-new{padding:52px 0 20px;}
+  .section-head{display:flex; align-items:baseline; gap:14px; margin-bottom:22px;}
+  .section-num{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--stamp); border:1px solid var(--stamp); border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  h2.section-title{font-family:'Fraunces', serif; font-weight:600; font-size:26px; margin:0;}
+  .section-sub{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft); letter-spacing:.03em;}
+
+  .filing-card{background:var(--card); border:1px solid var(--line); border-radius:3px; box-shadow:0 10px 26px -14px var(--shadow), 0 1px 0 var(--line); display:grid; grid-template-columns:1.1fr 1fr; position:relative; overflow:hidden;}
+  .filing-card::before{content:""; position:absolute; left:22px; top:0; bottom:0; width:1px; background:repeating-linear-gradient(180deg, var(--line) 0 6px, transparent 6px 14px);}
+  .drop-pane{padding:34px 34px 34px 50px; border-right:1px dashed var(--line); display:flex; flex-direction:column; justify-content:center; text-align:center;}
+  .drop-pane.drag{background:rgba(169,128,62,0.08);}
+  .drop-icon{width:46px; height:46px; margin:0 auto 14px; color:var(--brass);}
+  .drop-title{font-family:'Fraunces', serif; font-size:19px; font-weight:600; margin:0 0 6px;}
+  .drop-hint{font-size:13px; color:var(--ink-soft); margin:0 0 18px;}
+  .browse-btn{font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; background:var(--ink); color:var(--paper); border:none; padding:11px 20px; border-radius:2px; cursor:pointer; align-self:center;}
+  .browse-btn:hover{background:var(--ink-soft);}
+  .file-chip{margin-top:16px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--shelf); background:rgba(76,102,86,0.1); border:1px solid rgba(76,102,86,0.3); padding:7px 10px; border-radius:2px; display:none; word-break:break-all;}
+
+  .card-fields{padding:30px 34px 30px 20px; display:flex; flex-direction:column; gap:14px;}
+  .field-row{display:flex; flex-direction:column; gap:5px;}
+  .field-row label{font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft);}
+  .field-row input[type=text], .field-row textarea, .field-row select{font-family:'Inter', sans-serif; font-size:14.5px; color:var(--ink); background:transparent; border:none; border-bottom:1.5px solid var(--line); padding:6px 2px 8px;}
+  .field-row input:focus, .field-row textarea:focus, .field-row select:focus{border-bottom-color:var(--stamp);}
+  .field-row textarea{resize:vertical; min-height:44px; font-family:'Inter', sans-serif;}
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .submit-row{display:flex; align-items:center; gap:14px; margin-top:4px;}
+  .stamp-btn{font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; background:var(--stamp); color:var(--card); border:2px solid var(--stamp); padding:12px 22px; border-radius:2px; cursor:pointer;}
+  .stamp-btn:hover{background:#C24E0A; border-color:#C24E0A;}
+  .stamp-btn:disabled{opacity:.4; cursor:not-allowed;}
+  .form-note{font-size:12px; color:var(--ink-soft);}
+
+  /* ===== Catalog (shared) ===== */
+  section.catalog{padding:56px 0 90px;}
+  .catalog-toolbar{display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; justify-content:space-between; margin-bottom:8px;}
+  .tab-stack{display:flex; flex-direction:column; gap:10px;}
+  .tabs{display:flex; gap:0; border:1px solid var(--line); border-radius:3px; overflow:hidden; flex-wrap:wrap;}
+  .tab{font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.05em; text-transform:uppercase; padding:10px 16px; background:var(--card); border:none; border-right:1px solid var(--line); cursor:pointer; color:var(--ink-soft);}
+  .tab:last-child{border-right:none;}
+  .tab.active{background:var(--ink); color:var(--paper);}
+  .tabs.level-tabs .tab.active{background:var(--shelf);}
+  .sort-select{font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.05em; text-transform:uppercase; background:var(--card); border:1px solid var(--line); border-radius:3px; padding:10px 12px; color:var(--ink-soft);}
+  .result-count{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft); margin:12px 0 20px;}
+
+  /* ===== Level hamburger menu ===== */
+  .level-menu{position:relative; display:inline-block;}
+  .level-menu-btn{
+    display:flex; align-items:center; gap:10px; font-family:'IBM Plex Mono', monospace; font-size:12px;
+    letter-spacing:.05em; text-transform:uppercase; padding:10px 14px; background:var(--card);
+    border:1px solid var(--line); border-radius:3px; cursor:pointer; color:var(--ink);
+  }
+  .level-menu-btn svg{width:16px; height:16px; flex-shrink:0;}
+  .level-menu-btn .level-menu-label{color:var(--ink-soft);}
+  .level-menu-panel{
+    position:absolute; top:calc(100% + 6px); left:0; min-width:220px; background:var(--card);
+    border:1px solid var(--line); border-radius:3px; box-shadow:0 14px 30px -14px var(--shadow);
+    z-index:20; display:none; flex-direction:column; padding:6px; gap:2px;
+  }
+  .level-menu-panel.open{display:flex;}
+  .level-menu-item{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.03em; text-align:left;
+    background:none; border:none; border-radius:2px; padding:10px 12px; cursor:pointer; color:var(--ink);
+  }
+  .level-menu-item:hover{background:var(--paper-dark);}
+  .level-menu-item.active{background:var(--shelf); color:var(--paper);}
+  .level-menu-group{display:flex; flex-direction:column;}
+  .level-menu-parent{display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;}
+  .level-menu-parent .chevron{width:13px; height:13px; flex-shrink:0; transition:transform .15s ease;}
+  .level-menu-group.open > .level-menu-parent .chevron{transform:rotate(90deg);}
+  .level-submenu{display:none; flex-direction:column; padding:2px 0 4px 14px; gap:1px; border-left:1.5px solid var(--line); margin:0 0 2px 14px;}
+  .level-menu-group.open > .level-submenu{display:flex;}
+  .level-submenu{max-height:240px; overflow-y:auto;}
+  .subject-menu-item{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.02em; text-align:left;
+    background:none; border:none; border-radius:2px; padding:8px 10px; cursor:pointer; color:var(--ink-soft);
+  }
+  .subject-menu-item:hover{background:var(--paper-dark); color:var(--ink);}
+  .subject-menu-item.active{background:var(--shelf); color:var(--paper);}
+  .subject-menu-item.level-menu-parent{display:flex; align-items:center; justify-content:space-between; gap:6px;}
+  .subject-menu-empty{
+    display:block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-soft);
+    opacity:.7; padding:6px 10px 6px 20px; font-style:italic;
+  }
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(268px, 1fr)); gap:22px;}
+  .catalog-card{background:var(--card); border:1px solid var(--line); border-radius:3px; padding:20px 20px 18px; position:relative; box-shadow:0 8px 20px -14px var(--shadow); display:flex; flex-direction:column; gap:10px; transition:transform .15s ease, box-shadow .15s ease;}
+  .catalog-card:hover{transform:translateY(-2px); box-shadow:0 14px 26px -16px var(--shadow);}
+  .catalog-card::before{content:""; position:absolute; top:14px; right:14px; width:26px; height:26px; border-radius:50%; border:1.5px dashed var(--line);}
+  .call-number{font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.06em; color:var(--brass);}
+  .level-tag{font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--shelf); margin-left:8px;}
+  .catalog-card h3{font-family:'Fraunces', serif; font-size:18px; font-weight:600; margin:0; line-height:1.25; padding-right:24px;}
+  .catalog-meta{font-size:12.5px; color:var(--ink-soft); margin:0;}
+  .catalog-desc{font-size:13px; color:var(--ink-soft); line-height:1.5; margin:0; flex-grow:1; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;}
+  .card-footer{display:flex; align-items:center; justify-content:space-between; margin-top:6px; padding-top:12px; border-top:1px dashed var(--line);}
+  .type-stamp{font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; padding:4px 8px; border-radius:2px; border:1.5px solid currentColor;}
+  .type-ebook{color:var(--shelf);} .type-ejournal{color:var(--stamp);} .type-exam{color:var(--brass);}
+  .card-actions{display:flex; align-items:center; gap:8px;}
+  .icon-btn{background:none; border:none; cursor:pointer; color:var(--ink-soft); padding:4px; display:flex;}
+  .icon-btn:hover{color:var(--ink);}
+  .icon-btn svg{width:16px; height:16px;}
+  .read-hint{font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); display:flex; align-items:center; gap:5px;}
+  .read-hint svg{width:14px; height:14px;}
+
+  .empty-state{grid-column:1 / -1; text-align:center; padding:70px 20px; border:1px dashed var(--line); border-radius:3px; color:var(--ink-soft);}
+  .empty-state h3{font-family:'Fraunces', serif; font-size:21px; color:var(--ink); margin:0 0 8px;}
+  .empty-state p{font-size:13.5px; max-width:400px; margin:0 auto;}
+
+  /* ===== Detail slip (Reading Room) ===== */
+  .overlay{position:fixed; inset:0; background:rgba(11,61,87,0.55); display:none; align-items:center; justify-content:center; padding:24px; z-index:50;}
+  .overlay.open{display:flex;}
+  .slip{background:var(--card); max-width:480px; width:100%; border-radius:4px; padding:32px; position:relative; box-shadow:0 30px 60px -20px rgba(11,61,87,0.5); max-height:88vh; overflow-y:auto;}
+  .slip-close{position:absolute; top:16px; right:16px; background:none; border:none; cursor:pointer; color:var(--ink-soft); padding:4px;}
+  .slip-close svg{width:18px; height:18px;}
+  .slip h3{font-family:'Fraunces', serif; font-size:24px; margin:0 0 6px; padding-right:20px;}
+  .slip-desc{font-size:14px; line-height:1.65; color:var(--ink-soft); margin:14px 0 22px; white-space:pre-wrap;}
+  .slip-details{display:grid; grid-template-columns:1fr 1fr; gap:12px 20px; margin-bottom:24px; padding:16px; background:var(--paper-dark); border-radius:3px;}
+  .slip-detail-label{font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:2px;}
+  .slip-detail-value{font-size:13.5px; color:var(--ink);}
+  .slip-download{display:flex; align-items:center; justify-content:center; gap:8px; width:100%; font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:13px; letter-spacing:.06em; text-transform:uppercase; background:var(--stamp); color:var(--card); border:2px solid var(--stamp); padding:13px 20px; border-radius:2px; cursor:pointer;}
+  .slip-download:hover{background:#C24E0A; border-color:#C24E0A;}
+  .slip-download svg{width:16px; height:16px;}
+
+  .notice{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink-soft); background:rgba(169,128,62,0.1);
+    border:1px solid rgba(169,128,62,0.35); border-radius:3px; padding:10px 14px; margin-bottom:26px; line-height:1.6;
+  }
+
+  /* ===== Password lock ===== */
+  .pass-panel{background:var(--card); max-width:360px; width:100%; border-radius:4px; padding:34px 32px; text-align:center; box-shadow:0 30px 60px -20px rgba(11,61,87,0.5);}
+  .pass-icon{width:36px; height:36px; margin:0 auto 14px; color:var(--stamp);}
+  .pass-panel h3{font-family:'Fraunces', serif; font-size:21px; margin:0 0 8px;}
+  .pass-panel p{font-size:12.5px; color:var(--ink-soft); margin:0 0 20px; line-height:1.55;}
+  .pass-panel input{width:100%; font-family:'IBM Plex Mono', monospace; font-size:15px; padding:11px 12px; border:1.5px solid var(--line); border-radius:2px; margin-bottom:8px; text-align:center; letter-spacing:.14em; background:var(--paper);}
+  .pass-panel input:focus{outline:none; border-color:var(--stamp);}
+  .pass-error{font-size:11.5px; color:var(--stamp); min-height:16px; margin-bottom:12px; font-family:'IBM Plex Mono', monospace;}
+  .pass-actions{display:flex; gap:10px; justify-content:center;}
+  .pass-cancel{background:transparent; border:1.5px solid var(--line); color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; padding:11px 16px; border-radius:2px; cursor:pointer;}
+  .pass-cancel:hover{border-color:var(--ink-soft); color:var(--ink);}
+
+  /* ===== Pay-to-read gate (Reading Room) ===== */
+  .pay-panel{background:var(--card); max-width:400px; width:100%; border-radius:4px; padding:32px 30px; text-align:left; box-shadow:0 30px 60px -20px rgba(11,61,87,0.5); max-height:88vh; overflow-y:auto;}
+  .pay-icon{width:36px; height:36px; margin:0 auto 14px; color:var(--stamp); display:block;}
+  .pay-panel h3{font-family:'Fraunces', serif; font-size:21px; margin:0 0 8px; text-align:center;}
+  .pay-panel > p.pay-sub{font-size:12.5px; color:var(--ink-soft); margin:0 0 20px; line-height:1.55; text-align:center;}
+  .pay-details{background:var(--paper-dark); border-radius:3px; padding:16px 18px; margin-bottom:18px; display:flex; flex-direction:column; gap:10px;}
+  .pay-row{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  .pay-row-label{font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft);}
+  .pay-row-value{font-family:'IBM Plex Mono', monospace; font-size:16px; font-weight:600; color:var(--ink); letter-spacing:.03em;}
+  .pay-steps{font-size:12.5px; color:var(--ink-soft); line-height:1.7; margin:0 0 18px; padding-left:18px;}
+  .pay-field label{display:block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:6px;}
+  .pay-field input{width:100%; font-family:'IBM Plex Mono', monospace; font-size:14px; padding:11px 12px; border:1.5px solid var(--line); border-radius:2px; margin-bottom:8px; background:var(--paper); letter-spacing:.05em;}
+  .pay-field input:focus{outline:none; border-color:var(--stamp);}
+  .pay-error{font-size:11.5px; color:var(--stamp); min-height:16px; margin-bottom:6px; font-family:'IBM Plex Mono', monospace;}
+  .pay-actions{display:flex; gap:10px; margin-top:10px;}
+  .pay-actions .stamp-btn{flex:1;}
+  .pay-note{font-size:11px; color:var(--ink-soft); margin-top:16px; line-height:1.55; text-align:center;}
+  .pay-status{
+    display:flex; align-items:center; gap:8px; font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+    color:var(--brass); background:rgba(0,200,83,0.1); border:1px solid rgba(0,200,83,0.3);
+    border-radius:3px; padding:8px 12px; margin-top:10px;
+  }
+  .pay-step-label{font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--brass); text-align:center; margin:0 0 4px;}
+  .pay-phone-display{font-family:'IBM Plex Mono', monospace; font-size:15px; font-weight:600; color:var(--ink); text-align:center; margin:0 0 4px; letter-spacing:.03em;}
+  .pay-approve-box{
+    display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center;
+    background:var(--paper-dark); border-radius:3px; padding:18px; margin-bottom:18px;
+  }
+  .pay-approve-box svg{width:30px; height:30px; color:var(--brass);}
+  .pay-approve-box p{font-size:12.5px; color:var(--ink-soft); line-height:1.55; margin:0;}
+  .pay-back-link{background:none; border:none; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.04em; text-decoration:underline; cursor:pointer; padding:0; text-align:center; display:block; margin:12px auto 0;}
+  .pay-plan-list{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:18px;}
+  .pay-plan-option{
+    background:var(--paper); border:1.5px solid var(--line); border-radius:3px; padding:12px 6px;
+    display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; text-align:center;
+  }
+  .pay-plan-option:hover{border-color:var(--ink-soft);}
+  .pay-plan-option.selected{border-color:var(--stamp); background:rgba(255,106,0,0.06);}
+  .pay-plan-price{font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:15px; color:var(--ink);}
+  .pay-plan-duration{font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-soft); letter-spacing:.03em;}
+
+  /* ===== Header: your active reading-time status ===== */
+  .access-status-bar{
+    margin-top:14px; display:flex; align-items:center; gap:8px; font-family:'IBM Plex Mono', monospace; font-size:12px;
+    letter-spacing:.02em; color:#B9F6CA; background:rgba(0,200,83,0.12); border:1px solid rgba(0,200,83,0.35);
+    border-radius:3px; padding:9px 14px; width:fit-content;
+  }
+  .access-status-bar svg{flex-shrink:0;}
+
+  /* ===== Free-access toggle (Filing Desk) ===== */
+  .access-toggle-card{
+    background:var(--card); border:1px solid var(--line); border-radius:3px; padding:18px 22px;
+    display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:28px;
+    box-shadow:0 8px 20px -14px var(--shadow); flex-wrap:wrap;
+  }
+  .access-toggle-info h3{font-family:'Fraunces', serif; font-size:16px; margin:0 0 4px;}
+  .access-toggle-info p{font-size:12.5px; color:var(--ink-soft); margin:0; line-height:1.5;}
+  .toggle-switch{display:flex; align-items:center; gap:10px; flex-shrink:0;}
+  .toggle-switch-label{font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft);}
+  .toggle-switch-label.active{color:var(--brass);}
+  .toggle-track{
+    width:46px; height:26px; border-radius:14px; background:var(--line); border:none; cursor:pointer;
+    position:relative; padding:0; flex-shrink:0; transition:background .15s ease;
+  }
+  .toggle-track.on{background:var(--brass);}
+  .toggle-track::after{
+    content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:transform .15s ease;
+  }
+  .toggle-track.on::after{transform:translateX(20px);}
+  .toggle-track:disabled{opacity:.5; cursor:not-allowed;}
+
+  /* ===== In-system viewer ===== */
+  .viewer-panel{background:var(--card); width:100%; max-width:1180px; height:92vh; border-radius:4px; padding:0; position:relative; display:flex; flex-direction:column; box-shadow:0 30px 60px -20px rgba(11,61,87,0.5); overflow:hidden;}
+  .viewer-header{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 20px; border-bottom:1px solid var(--line); background:var(--paper-dark); flex-shrink:0;}
+  .viewer-titlewrap{min-width:0;}
+  .viewer-titlewrap h4{font-family:'Fraunces', serif; font-size:16px; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .viewer-titlewrap span{font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-soft); letter-spacing:.06em;}
+  .viewer-header-actions{display:flex; align-items:center; gap:14px; flex-shrink:0;}
+  .zoom-controls{display:flex; align-items:center; gap:2px; background:var(--card); border:1px solid var(--line); border-radius:3px; padding:2px;}
+  .zoom-btn{background:none; border:none; cursor:pointer; color:var(--ink); padding:6px 9px; display:flex; align-items:center; justify-content:center; border-radius:2px; font-family:'IBM Plex Mono', monospace;}
+  .zoom-btn:hover{background:var(--paper-dark);}
+  .zoom-btn:disabled{opacity:.35; cursor:not-allowed;}
+  .zoom-btn:disabled:hover{background:none;}
+  .zoom-btn svg{width:15px; height:15px;}
+  .zoom-level{font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink-soft); min-width:42px; text-align:center; user-select:none;}
+  .viewer-frame-wrap{flex-grow:1; background:#ffffff; position:relative; overflow:auto;}
+  .viewer-frame-wrap iframe{width:100%; height:100%; border:none; display:block;}
+  .viewer-zoom-layer{transform-origin:top center; transition:transform .1s ease-out;}
+  .viewer-fallback{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; padding:30px; text-align:center; color:var(--ink-soft); font-size:13px; background:var(--paper);}
+  .viewer-fallback svg{width:34px; height:34px; color:var(--brass);}
+  .viewer-fallback strong{color:var(--ink); font-family:'Fraunces', serif; font-size:16px; font-weight:600;}
+
+  /* ===== pdf render (pdf.js canvas output — keeps PDFs inside our own
+     viewer instead of the browser's native PDF tool, which has its own
+     print button we can't otherwise control) ===== */
+  .pdf-render{max-width:1120px; margin:0 auto; padding:24px; display:flex; flex-direction:column; align-items:center; gap:18px; background:var(--paper-dark); min-height:100%;}
+  .pdf-page{max-width:100%; height:auto; background:#ffffff; box-shadow:0 6px 18px -6px rgba(11,61,87,0.35); display:block;}
+
+  /* ===== docx render (mammoth output) ===== */
+  .docx-render{max-width:880px; margin:0 auto; padding:52px 60px 80px; font-family:'Inter', sans-serif; font-size:17px; line-height:1.75; color:var(--ink); background:#ffffff; min-height:100%;}
+  .docx-render h1, .docx-render h2, .docx-render h3, .docx-render h4{font-family:'Fraunces', serif; color:var(--ink); line-height:1.25; margin:1.4em 0 .5em;}
+  .docx-render h1{font-size:30px;} .docx-render h2{font-size:24px;} .docx-render h3{font-size:20px;}
+  .docx-render p{margin:0 0 1em;}
+  .docx-render table{border-collapse:collapse; width:100%; margin:1em 0; font-size:15px;}
+  .docx-render table td, .docx-render table th{border:1px solid var(--line); padding:7px 11px; text-align:left;}
+  .docx-render img{max-width:100%; height:auto;}
+  .docx-render ul, .docx-render ol{padding-left:1.4em; margin:0 0 1em;}
+  .docx-render a{color:var(--stamp);}
+
+  /* ===== Comments ===== */
+  .comment-section{margin-top:26px; padding-top:20px; border-top:1px solid var(--line);}
+  .comment-list{display:flex; flex-direction:column;}
+  .comment-item{padding:10px 0; border-top:1px dashed var(--line);}
+  .comment-item:first-child{border-top:none;}
+  .comment-meta{font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--brass); margin-bottom:3px; letter-spacing:.02em;}
+  .comment-text{font-size:13.5px; line-height:1.55; color:var(--ink); white-space:pre-wrap;}
+  .comment-empty{font-size:12.5px; color:var(--ink-soft);}
+  .comment-form{margin-top:16px; display:flex; flex-direction:column; gap:8px;}
+  .comment-form input, .comment-form textarea{
+    font-family:'Inter', sans-serif; font-size:13.5px; color:var(--ink); padding:9px 11px;
+    border:1.5px solid var(--line); border-radius:2px; background:var(--paper);
+  }
+  .comment-form textarea{min-height:64px; resize:vertical;}
+  .comment-form input:focus, .comment-form textarea:focus{outline:none; border-color:var(--stamp);}
+  .comment-post-btn{align-self:flex-start; padding:10px 18px;}
+
+  /* ===== Protection deterrents (print / copy / devtools) =====
+     NOTE: these are deterrents, not real security — see the JS comment
+     near DESK_PASSWORD for the same caveat that already applies to the
+     staff password. Screenshots in particular cannot be blocked by any
+     website; nothing here attempts to. */
+  @media print{
+    body *{ visibility:hidden !important; }
+    body::after{
+      content:"Printing is disabled for material in the Stacks.";
+      visibility:visible !important; position:fixed; inset:0; z-index:9999;
+      display:flex; align-items:center; justify-content:center; text-align:center; padding:40px;
+      font-family:'Fraunces', serif; font-size:22px; color:var(--ink); background:var(--paper);
+    }
+  }
+  .slip, .viewer-frame-wrap, .docx-render, .pdf-render, .catalog-card{
+    -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none;
+  }
+  /* keep form fields (including the comment box) selectable/typeable */
+  .slip input, .slip textarea, .comment-form input, .comment-form textarea, .pay-field input{
+    -webkit-user-select:text; -moz-user-select:text; -ms-user-select:text; user-select:text;
+  }
+
+  footer{background:var(--ink); color:#B9B49F; padding:26px 0; font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:.04em; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;}
+
+  @media (max-width:760px){
+    .filing-card{grid-template-columns:1fr;}
+    .drop-pane{border-right:none; border-bottom:1px dashed var(--line);}
+    .stat-rail{flex-wrap:wrap;}
+    .stat{flex:1 1 50%; border-left:none; padding-bottom:14px;}
+    .slip-details{grid-template-columns:1fr;}
+    .viewer-panel{height:92vh;}
+    .docx-render{padding:30px 22px 50px;}
+    .viewer-titlewrap span{display:none;}
+  }
+  @media (prefers-reduced-motion: reduce){ .catalog-card{transition:none;} .viewer-zoom-layer{transition:none;} }
+</style>
+</head>
+<body>
+
+<header class="drawer" id="headerEl">
+  <div class="wrap">
+    <div class="drawer-top">
+      <div>
+        <p class="brand-eyebrow" id="eyebrow">Digital Repository · Reading Room</p>
+        <h1 class="title" id="titleEl">Ben Asibwa E-resources information repository</h1>
+        <p class="tagline" id="taglineEl">Browse the collection and read documents directly in the Reading Room — no downloads.</p>
+        <p class="header-contact">For any question, remarks, complain, or comment, call or WhatsApp: 0746303931 or 0799500291. Or send an e-mail to <i>benasibwa@gmail.com</i></p>
+      </div>
+      <div class="role-switch">
+        <button class="role-btn" id="deskBtn" data-role="desk">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke-linecap="round"/></svg>
+          Filing Desk
+        </button>
+        <button class="role-btn active" id="roomBtn" data-role="room">Reading Room</button>
+      </div>
+    </div>
+
+    <div class="lookup-bar" id="roomLookup">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3" stroke-linecap="round"/></svg>
+      <input type="text" id="searchInput" placeholder="Search by title, author, or subject / course code">
+    </div>
+    <div class="access-status-bar" id="accessStatusBar" hidden></div>
+
+    <div class="stat-rail" id="deskStats" hidden>
+      <div class="stat"><div class="stat-num" id="statAll">0</div><div class="stat-label">Items filed</div></div>
+      <div class="stat"><div class="stat-num" id="statLower">0</div><div class="stat-label">Lower School</div></div>
+      <div class="stat"><div class="stat-num" id="statJunior">0</div><div class="stat-label">Junior High</div></div>
+      <div class="stat"><div class="stat-num" id="statSenior">0</div><div class="stat-label">Senior High</div></div>
+      <div class="stat"><div class="stat-num" id="statCollege">0</div><div class="stat-label">College</div></div>
+      <div class="stat"><div class="stat-num" id="statUniversity">0</div><div class="stat-label">University</div></div>
+      <div class="stat"><div class="stat-num" id="statEbook">0</div><div class="stat-label">E-books</div></div>
+      <div class="stat"><div class="stat-num" id="statEjournal">0</div><div class="stat-label">Periodicals</div></div>
+      <div class="stat"><div class="stat-num" id="statExam">0</div><div class="stat-label">Exam papers</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== FILING DESK VIEW ===== -->
+<div id="deskView" hidden>
+  <section class="file-new">
+    <div class="wrap">
+      <div class="access-toggle-card">
+        <div class="access-toggle-info">
+          <h3>Reading Room access</h3>
+          <p id="accessToggleDesc">Currently <strong>paid</strong> — readers pay small M-Pesa amounts to open documents.</p>
+        </div>
+        <div class="toggle-switch">
+          <span class="toggle-switch-label" id="toggleLabelPaid">Paid</span>
+          <button type="button" class="toggle-track" id="freeAccessToggle" role="switch" aria-checked="false" aria-label="Toggle free access to the Reading Room"></button>
+          <span class="toggle-switch-label" id="toggleLabelFree">Free</span>
+        </div>
+      </div>
+
+      <div class="section-head">
+        <span class="section-num">1</span>
+        <div>
+          <h2 class="section-title">File a new resource</h2>
+          <div class="section-sub">Drop a file, complete the card, stamp it in</div>
+        </div>
+      </div>
+
+      <form class="filing-card" id="uploadForm">
+        <div class="drop-pane" id="dropPane">
+          <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+            <path d="M12 3v12m0-12 4.5 4.5M12 3 7.5 7.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 16.5v2A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5v-2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p class="drop-title">Drop a file here</p>
+          <p class="drop-hint">PDF, EPUB, DOC — or any format your archive keeps</p>
+          <button type="button" class="browse-btn" id="browseBtn">Choose file</button>
+          <input type="file" id="fileInput" style="display:none">
+          <div class="file-chip" id="fileChip"></div>
+        </div>
+
+        <div class="card-fields">
+          <div class="field-row">
+            <label for="fTitle">Title</label>
+            <input type="text" id="fTitle" placeholder="e.g. Principles of Microeconomics" required>
+          </div>
+          <div class="two-col">
+            <div class="field-row"><label for="fLevel">Level</label>
+              <select id="fLevel">
+                <option value="lower">Lower School</option>
+                <option value="junior">Junior High School</option>
+                <option value="senior">Senior High School</option>
+                <option value="college">College</option>
+                <option value="university">University</option>
+              </select>
+            </div>
+            <div class="field-row"><label for="fCategory">Category</label>
+              <select id="fCategory">
+                <option value="ebook">E-book</option>
+                <option value="ejournal">Periodical</option>
+                <option value="exam">Past exam paper</option>
+              </select>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field-row"><label for="fAuthor">Author / Body</label><input type="text" id="fAuthor" placeholder="e.g. J. Mwangi"></div>
+            <div class="field-row">
+              <label for="fSubject" id="fSubjectLabel">Subject / Course code</label>
+              <select id="fSubjectSelect" style="display:none;"></select>
+              <input type="text" id="fSubject" placeholder="e.g. ECON 201">
+            </div>
+          </div>
+          <div class="field-row" id="uniCascadeUni" style="display:none;">
+            <label for="fUni">University</label>
+            <select id="fUni"></select>
+          </div>
+          <div class="field-row" id="uniCascadeFaculty" style="display:none;">
+            <label for="fFaculty">Faculty / College / School</label>
+            <select id="fFaculty"></select>
+          </div>
+          <div class="field-row" id="uniCascadeCourse" style="display:none;">
+            <label for="fCourse">Course</label>
+            <select id="fCourse"></select>
+          </div>
+          <div class="field-row" id="uniCascadeUnit" style="display:none;">
+            <label for="fUnit">Unit</label>
+            <select id="fUnit"></select>
+          </div>
+          <div class="field-row"><label for="fYear">Year</label><input type="text" id="fYear" placeholder="2026"></div>
+          <div class="field-row"><label for="fDesc">Description</label><textarea id="fDesc" placeholder="A short note on scope, edition, or coverage"></textarea></div>
+          <div class="submit-row">
+            <button type="submit" class="stamp-btn" id="stampBtn" disabled>Stamp &amp; file</button>
+            <span class="form-note" id="formNote">Attach a file to enable filing</span>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+
+<!-- ===== SHARED CATALOG ===== -->
+<section class="catalog">
+  <div class="wrap">
+    <div class="notice" id="roomNotice">Read-only view — this shows exactly what's been filed at the desk. Click a title to open it in the built-in viewer. Documents are read in-app only and cannot be downloaded, printed, or copied.</div>
+
+    <div class="section-head" id="deskCatalogHead" hidden>
+      <span class="section-num">2</span>
+      <div>
+        <h2 class="section-title">Browse the catalog</h2>
+        <div class="section-sub">Everything filed to date</div>
+      </div>
+    </div>
+
+    <div class="catalog-toolbar">
+      <div class="tab-stack">
+        <div class="level-menu" id="levelMenu">
+          <button type="button" class="level-menu-btn" id="levelMenuBtn" aria-haspopup="true" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round"/></svg>
+            <span class="level-menu-label" id="levelMenuLabel">All Levels</span>
+          </button>
+          <div class="level-menu-panel" id="levelMenuPanel">
+            <button type="button" class="level-menu-item active" data-level="all">All Levels</button>
+            <div class="level-menu-group" data-level="lower">
+              <button type="button" class="level-menu-item level-menu-parent" data-level="lower">
+                <span>Lower School</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="level-submenu" data-submenu="lower"></div>
+            </div>
+            <div class="level-menu-group" data-level="junior">
+              <button type="button" class="level-menu-item level-menu-parent" data-level="junior">
+                <span>Junior High School</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="level-submenu" data-submenu="junior"></div>
+            </div>
+            <div class="level-menu-group" data-level="senior">
+              <button type="button" class="level-menu-item level-menu-parent" data-level="senior">
+                <span>Senior High School</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="level-submenu" data-submenu="senior"></div>
+            </div>
+            <div class="level-menu-group" data-level="college">
+              <button type="button" class="level-menu-item level-menu-parent" data-level="college">
+                <span>College</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="level-submenu" data-submenu="college"></div>
+            </div>
+            <div class="level-menu-group" data-level="university">
+              <button type="button" class="level-menu-item level-menu-parent" data-level="university">
+                <span>University</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="level-submenu" data-submenu="university"></div>
+            </div>
+          </div>
+        </div>
+        <div class="tabs" id="tabs">
+          <button class="tab active" data-filter="all">All</button>
+          <button class="tab" data-filter="ebook">E-books</button>
+          <button class="tab" data-filter="ejournal">Periodicals</button>
+          <button class="tab" data-filter="exam">Exam papers</button>
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; align-items:center;">
+        <select class="sort-select" id="sortSelect">
+          <option value="newest">Newest first</option>
+          <option value="title">Title A–Z</option>
+          <option value="year">Year, newest</option>
+        </select>
+        <div class="search-box" id="deskSearchBox" hidden style="display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--line); border-radius:3px; padding:9px 12px; min-width:220px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" style="color:var(--ink-soft); flex-shrink:0;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3" stroke-linecap="round"/></svg>
+          <input type="text" id="deskSearchInput" placeholder="Search this catalog" style="border:none; background:transparent; font-family:'Inter', sans-serif; font-size:13.5px; width:100%; color:var(--ink);">
+        </div>
+      </div>
+    </div>
+    <p class="result-count" id="resultCount"></p>
+
+    <div class="grid" id="grid"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap" style="display:flex; flex-direction:column; gap:10px; width:100%;">
+    <div style="display:flex; justify-content:space-between; width:100%; flex-wrap:wrap; gap:8px;">
+      <span>THE STACKS</span>
+      <span id="footerCount">0 ITEMS ON SHELF</span>
+    </div>
+    <div style="padding-top:10px; border-top:1px solid rgba(185,180,159,0.25); font-size:11px; line-height:1.7; letter-spacing:.02em; text-align:center; font-weight:700; color:#00E676;">
+      For any question, remarks, complain, or comment, call or WhatsApp: 0746303931 or 0799500291. Or send an e-mail to <i>benasibwa@gmail.com</i>
+    </div>
+  </div>
+</footer>
+
+<!-- Detail slip -->
+<div class="overlay" id="overlay"><div class="slip" id="slip"></div></div>
+
+<!-- Filing Desk password lock -->
+<div class="overlay" id="lockOverlay">
+  <div class="pass-panel">
+    <svg class="pass-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="1.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke-linecap="round"/></svg>
+    <h3>Filing Desk — Staff Access</h3>
+    <p>Enter the staff password to file new resources into the Stacks. Everyone else can continue browsing the Reading Room.</p>
+    <input type="password" id="lockInput" placeholder="Password" autocomplete="off">
+    <div class="pass-error" id="lockError"></div>
+    <div class="pass-actions">
+      <button type="button" class="stamp-btn" id="lockSubmit">Unlock</button>
+      <button type="button" class="pass-cancel" id="lockCancel">Go to Reading Room</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pay-to-read gate -->
+<div class="overlay" id="payOverlay">
+  <div class="pay-panel" id="payPanel"></div>
+</div>
+
+<!-- In-system document viewer -->
+<div class="overlay" id="viewerOverlay">
+  <div class="viewer-panel" id="viewerPanel">
+    <div class="viewer-header">
+      <div class="viewer-titlewrap">
+        <h4 id="viewerTitle"></h4>
+        <span id="viewerCallNumber"></span>
+      </div>
+      <div class="viewer-header-actions">
+        <div class="zoom-controls" id="zoomControls">
+          <button type="button" class="zoom-btn" id="zoomOutBtn" title="Zoom out" aria-label="Zoom out">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M21 21l-4.3-4.3" stroke-linecap="round"/></svg>
+          </button>
+          <span class="zoom-level" id="zoomLevel">100%</span>
+          <button type="button" class="zoom-btn" id="zoomInBtn" title="Zoom in" aria-label="Zoom in">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6M21 21l-4.3-4.3" stroke-linecap="round"/></svg>
+          </button>
+          <button type="button" class="zoom-btn" id="zoomResetBtn" title="Reset zoom" aria-label="Reset zoom">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 3 6.7M3 12v5h5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <button class="slip-close" id="viewerClose" aria-label="Close" style="position:static;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18" stroke-linecap="round"/></svg></button>
+      </div>
+    </div>
+    <div class="viewer-frame-wrap" id="viewerFrameWrap"></div>
+  </div>
+</div>
+
+<script type="module">
+/* ============================================================
+   SUPABASE SETUP
+   This app uses Supabase for both the file storage bucket ("stacks")
+   and the catalog database (the "items" table), plus a small
+   "app_settings" table for the free/paid toggle. See the SQL block
+   right above fetchSettings() below for the exact table this needs.
+   ============================================================ */
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+const SUPABASE_URL = "https://kjijqazxxbsmerdwoayf.supabase.co";
+const SUPABASE_KEY = "sb_publishable_MOxKxbGRKGyQZ7LBSDSiEg_1vMTh2YS";
+const SUPABASE_BUCKET = "stacks";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+(function(){
+  // ---- Staff password for the Filing Desk. Change this before real use. ----
+  // NOTE: this is a client-side check only (visible in page source) — it deters
+  // casual access but is not real security. Don't rely on it for sensitive data.
+  const DESK_PASSWORD = "stacks2026";
+
+  // ---- Pay-to-read gate settings ----
+  // NOTE: same caveat as DESK_PASSWORD above — this is a client-side,
+  // honor-system gate. It records the M-Pesa code the reader typed in
+  // and starts an access window in this browser (localStorage). It does
+  // NOT call the M-Pesa/Daraja API and cannot verify that the code is
+  // real or that money actually moved. Real verification needs a server
+  // (e.g. a Safaricom Daraja STK Push + callback handled by a backend/
+  // Supabase Edge Function) checking payments against the paybill/
+  // account below.
+  const EDGE_FUNCTIONS_BASE = "https://kjijqazxxbsmerdwoayf.functions.supabase.co";
+  const STK_POLL_INTERVAL_MS = 4000;
+  const STK_POLL_TIMEOUT_MS = 120000; // give up after 2 minutes
+
+  // NOTE: the mpesa_payments table this relies on must be created once in
+  // the Supabase SQL editor (Project → SQL Editor → New query) — run:
+  //
+  //   create table if not exists mpesa_payments (
+  //     id uuid primary key default gen_random_uuid(),
+  //     invoice_id text unique not null,        -- IntaSend's invoice/tracking id
+  //     phone_number text not null,
+  //     amount numeric not null,
+  //     plan_id text not null,                  -- '1h' | '5h' | '24h'
+  //     plan_hours numeric not null,
+  //     status text not null default 'PENDING', -- PENDING | COMPLETE | FAILED
+  //     failed_reason text,
+  //     created_at timestamptz not null default now(),
+  //     updated_at timestamptz not null default now()
+  //   );
+  //   create index if not exists mpesa_payments_invoice_idx on mpesa_payments (invoice_id);
+  //   alter table mpesa_payments enable row level security;
+  //   create policy "public read by invoice id" on mpesa_payments
+  //     for select using (true);
+  //
+  // The Edge Functions use the service_role key (bypasses RLS) to write;
+  // the browser only ever reads its own row by invoice_id, and only status
+  // fields it needs — invoice_id is an unguessable token, not a login
+  // credential, so a public read policy is fine here.
+
+  // ---- Free-access toggle (Filing Desk) ----
+  // Stored in Supabase (not localStorage) so the switch affects every
+  // visitor, not just the staff member's own browser. Requires this
+  // table to exist in your Supabase project — run once in the SQL
+  // editor before using the toggle:
+  //
+  //   create table if not exists app_settings (
+  //     id text primary key,
+  //     free_access boolean not null default false
+  //   );
+  //   insert into app_settings (id, free_access) values ('global', false)
+  //   on conflict (id) do nothing;
+  //   alter table app_settings enable row level security;
+  //   create policy "public read" on app_settings for select using (true);
+  //   create policy "public update" on app_settings for update using (true);
+  //
+  // If the table doesn't exist yet, fetchSettings() below fails quietly
+  // (logs a warning) and the system just stays in paid mode; toggling
+  // will show a clear on-screen error telling you to run the SQL above.
+  const SETTINGS_TABLE = "app_settings";
+  const SETTINGS_ROW_ID = "global";
+
+  // ---- Print / copy / devtools deterrents ----
+  // NOTE: same caveat as above — these discourage casual printing, copying,
+  // and page-source poking, but a determined user can still bypass them
+  // (e.g. via browser devtools or an OS-level screenshot/screen recording
+  // tool). No website can block screenshots; nothing here claims to.
+
+  // File extensions the browser can render natively inside an <iframe>
+  const PREVIEWABLE_EXT = ['png','jpg','jpeg','gif','webp','svg','txt','html','htm'];
+  // .docx is handled separately via mammoth.js (converted to HTML, not iframed)
+  const DOCX_EXT = ['docx'];
+  // .pdf is handled separately via pdf.js, rendered to canvas — NOT iframed.
+  const PDF_EXT = ['pdf'];
+  if(typeof pdfjsLib !== 'undefined'){
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  // ---- SHARED STATE ----
+  // state.items is populated from Supabase (fetchItems below), refetched
+  // after load and after each filing/removal/comment action
+  const state = { items: [], role: 'room', level: 'all', subject: '', filter: 'all', deskQuery: '', roomQuery: '', sort: 'newest', pendingFile: null, unlockedDesk: false, pendingReadItem: null, freeAccess: false, payPhone: '', payPlan: null, stkPollAbort: false };
+
+  const typeLabel = { ebook:'E-book', ejournal:'Periodical', exam:'Exam paper' };
+  const typeClass = { ebook:'type-ebook', ejournal:'type-ejournal', exam:'type-exam' };
+  const callPrefix = { ebook:'EBK', ejournal:'PER', exam:'EXM' };
+  const levelLabel = { lower:'Lower School', junior:'Junior High School', senior:'Senior High School', college:'College', university:'University' };
+
+  // ---- Kenya CBC/CBE subjects (learning areas), by level ----
+  const SUBJECTS_BY_LEVEL = {
+    lower: [
+      'Literacy Activities',
+      'Kiswahili Language Activities / KSL',
+      'English Language Activities',
+      'Indigenous Language Activities',
+      'Mathematical Activities',
+      'Environmental Activities',
+      'Hygiene and Nutrition Activities',
+      'Religious Education Activities (CRE/IRE/HRE)',
+      'Movement and Creative Activities',
+    ],
+    junior: [
+      'English',
+      'Kiswahili / Kenya Sign Language',
+      'Mathematics',
+      'Integrated Science',
+      'Health Education',
+      'Pre-Technical and Pre-Career Education',
+      'Social Studies',
+      'Religious Education (CRE/IRE/HRE)',
+      'Business Studies',
+      'Agriculture and Nutrition',
+      'Creative Arts and Sports',
+      'Life Skills Education',
+      'Computer Science (optional)',
+      'Community Service Learning',
+      'Indigenous Kenyan Languages (optional)',
+      'Foreign Languages — French/German/Mandarin/Arabic (optional)',
+    ],
+    senior: [
+      'English (core)',
+      'Kiswahili / KSL (core)',
+      'Mathematics (core)',
+      'Community Service Learning (core)',
+      'Physical Education (core)',
+      'Biology (STEM — Pure Sciences)',
+      'Chemistry (STEM — Pure Sciences)',
+      'Physics (STEM — Pure Sciences)',
+      'Advanced Mathematics (STEM — Pure Sciences)',
+      'General Science (STEM — Applied Sciences)',
+      'Agriculture (STEM — Applied Sciences)',
+      'Computer Studies (STEM — Technology & Engineering)',
+      'Drawing and Design (STEM — Technology & Engineering)',
+      'Career and Technical Studies (STEM)',
+      'History (Social Sciences — Humanities & Business)',
+      'Geography (Social Sciences — Humanities & Business)',
+      'Christian/Islamic/Hindu Religious Education (Social Sciences)',
+      'Business Studies (Social Sciences — Humanities & Business)',
+      'Economics (Social Sciences — Humanities & Business)',
+      'English Literature (Social Sciences — Languages & Literature)',
+      'Kiswahili Fasihi (Social Sciences — Languages & Literature)',
+      'Foreign Languages — French/German/Mandarin/Arabic (Social Sciences)',
+      'Performing Arts (Arts and Sports Science)',
+      'Visual Arts (Arts and Sports Science)',
+      'Sports Science (Arts and Sports Science)',
+      'Home Science (Arts and Sports Science)',
+    ],
+  };
+
+  // ---- University data: top 15 public universities in Kenya, each with
+  // its faculties/colleges/schools, and a representative sample of
+  // courses/units under each. ----
+  const UNIVERSITIES_DATA = {
+    'University of Nairobi': {
+      'College of Agriculture & Veterinary Sciences (CAVS)': {
+        'BSc. Agriculture': ['Principles of Crop Production', 'Introductory Soil Science', 'Farm Structures & Machinery', 'Agricultural Economics I', 'Animal Production I'],
+        'BSc. Food Science & Technology': ['Food Chemistry I', 'Food Microbiology', 'Introduction to Food Processing', 'Human Nutrition I'],
+        'Bachelor of Veterinary Medicine': ['Veterinary Anatomy I', 'Veterinary Physiology I', 'Veterinary Biochemistry', 'Animal Husbandry'],
+      },
+      'College of Architecture & Engineering (CAE)': {
+        'BSc. Civil Engineering': ['Engineering Mathematics I', 'Engineering Drawing', 'Fluid Mechanics I', 'Structural Analysis I', 'Surveying I'],
+        'Bachelor of Architecture': ['Architectural Design Studio I', 'History of Architecture I', 'Building Construction I', 'Architectural Graphics'],
+        'BSc. Quantity Surveying': ['Building Measurement I', 'Construction Technology I', 'Building Economics', 'Construction Materials'],
+      },
+      'College of Biological & Physical Sciences (CBPS)': {
+        'BSc. Computer Science': ['Introduction to Programming', 'Discrete Mathematics', 'Data Structures & Algorithms', 'Computer Organization', 'Calculus I'],
+        'BSc. Actuarial Science': ['Financial Mathematics I', 'Probability & Statistics I', 'Life Contingencies I', 'Calculus I'],
+        'BSc. Biochemistry': ['General Biochemistry I', 'Cell Biology', 'Organic Chemistry I', 'Genetics I'],
+      },
+      'College of Education & External Studies (CEES)': {
+        'Bachelor of Education (Arts)': ['Educational Psychology', 'Curriculum Studies', 'Philosophy of Education', 'Teaching Methods I'],
+        'Bachelor of Education (Science)': ['Educational Psychology', 'Curriculum Studies', 'Science Teaching Methods', 'Educational Technology'],
+      },
+      'College of Health Sciences (CHS)': {
+        'Bachelor of Medicine & Bachelor of Surgery (MBChB)': ['Human Anatomy I', 'Human Physiology I', 'Medical Biochemistry', 'Medical Biophysics'],
+        'Bachelor of Pharmacy': ['Pharmaceutical Chemistry I', 'Human Anatomy & Physiology', 'Pharmaceutics I'],
+        'Bachelor of Science in Nursing': ['Anatomy & Physiology I', 'Fundamentals of Nursing I', 'Microbiology I', 'Nutrition & Dietetics'],
+      },
+      'College of Humanities & Social Sciences (CHSS)': {
+        'Bachelor of Laws (LLB)': ['Law of Contract I', 'Legal Systems & Method', 'Constitutional Law I', 'Law of Torts'],
+        'Bachelor of Commerce': ['Financial Accounting I', 'Principles of Economics I', 'Business Statistics', 'Business Law'],
+        'Bachelor of Arts (Economics)': ['Microeconomics I', 'Macroeconomics I', 'Mathematics for Economists', 'Statistics for Economists'],
+      },
+    },
+    'Kenyatta University': {
+      'School of Agriculture & Enterprise Development': {
+        'BSc. Agribusiness Management & Trade': ['Principles of Agribusiness', 'Farm Management', 'Agricultural Economics I', 'Crop Production I'],
+        'BSc. Horticulture': ['Principles of Crop Production', 'Plant Propagation', 'Introductory Soil Science', 'Botany'],
+      },
+      'School of Engineering & Architecture': {
+        'BSc. Civil Engineering': ['Engineering Mathematics I', 'Statics', 'Engineering Drawing', 'Fluid Mechanics I'],
+        'BSc. Computer Science': ['Programming I', 'Data Structures', 'Computer Architecture', 'Discrete Structures'],
+      },
+      'School of Business': {
+        'Bachelor of Commerce': ['Principles of Accounting I', 'Business Statistics I', 'Principles of Economics I', 'Business Communication'],
+        'Bachelor of Business Administration': ['Introduction to Management', 'Principles of Marketing', 'Business Mathematics', 'Financial Accounting I'],
+      },
+      'School of Education': {
+        'Bachelor of Education (Arts)': ['Educational Psychology', 'Introduction to Curriculum Studies', 'Philosophy of Education', 'Sociology of Education'],
+        'Bachelor of Education (Science)': ['Educational Psychology', 'Curriculum Studies', 'Educational Technology', 'Science Teaching Methods'],
+      },
+      'School of Health Sciences': {
+        'Bachelor of Science in Nursing': ['Human Anatomy', 'Human Physiology', 'Fundamentals of Nursing I', 'Microbiology'],
+        'Bachelor of Pharmacy': ['Pharmaceutical Chemistry I', 'Anatomy & Physiology', 'Pharmaceutics I'],
+      },
+      'School of Law': {
+        'Bachelor of Laws (LLB)': ['Legal Systems & Methods', 'Law of Contract I', 'Constitutional Law I', 'Criminal Law I'],
+      },
+    },
+    'Jomo Kenyatta University of Agriculture and Technology': {
+      'College of Engineering & Technology (COETEC)': {
+        'BSc. Electrical & Electronic Engineering': ['Circuit Theory I', 'Engineering Mathematics I', 'Digital Electronics', 'Engineering Drawing'],
+        'BSc. Civil Engineering': ['Engineering Mathematics I', 'Mechanics of Structures I', 'Surveying I', 'Fluid Mechanics I'],
+        'BSc. Mechatronic Engineering': ['Engineering Mathematics I', 'Engineering Mechanics', 'Digital Electronics', 'Engineering Drawing & Design'],
+      },
+      'College of Pure & Applied Sciences (COPAS)': {
+        'BSc. Computer Science': ['Introduction to Programming', 'Discrete Mathematics', 'Data Structures & Algorithms', 'Digital Logic Design'],
+        'BSc. Applied Statistics': ['Calculus I', 'Probability I', 'Statistical Methods I', 'Linear Algebra'],
+      },
+      'College of Agriculture & Natural Resource Management (CANRM)': {
+        'BSc. Horticulture': ['Principles of Crop Production', 'Plant Propagation', 'Introductory Soil Science', 'Botany'],
+        'BSc. Agricultural Economics': ['Principles of Economics I', 'Farm Management', 'Agricultural Marketing', 'Statistics for Agriculture'],
+      },
+      'College of Human Resource Development (COHRED)': {
+        'Bachelor of Commerce': ['Financial Accounting I', 'Principles of Economics I', 'Business Statistics', 'Introduction to Management'],
+      },
+      'College of Health Sciences (COHES)': {
+        'Bachelor of Science in Nursing': ['Human Anatomy', 'Human Physiology', 'Fundamentals of Nursing', 'Community Health Nursing I'],
+      },
+    },
+    'Moi University': {
+      'School of Engineering': {
+        'BSc. Electrical & Communications Engineering': ['Engineering Mathematics I', 'Circuit Theory', 'Digital Electronics', 'Engineering Drawing'],
+        'BSc. Civil & Structural Engineering': ['Engineering Mathematics I', 'Statics', 'Surveying I', 'Structural Mechanics I'],
+      },
+      'School of Information Sciences': {
+        'BSc. Computer Science': ['Introduction to Programming', 'Data Structures', 'Computer Organization', 'Discrete Mathematics'],
+        'Bachelor of Library & Information Science': ['Introduction to Library Science', 'Information Sources & Services', 'Cataloguing & Classification I'],
+      },
+      'School of Business & Economics': {
+        'Bachelor of Commerce': ['Financial Accounting I', 'Microeconomics I', 'Business Statistics', 'Business Communication'],
+      },
+      'School of Education': {
+        'Bachelor of Education (Science)': ['Educational Psychology', 'Curriculum Studies', 'Science Teaching Methods', 'Educational Technology'],
+        'Bachelor of Education (Arts)': ['Educational Psychology', 'Curriculum Studies', 'Philosophy of Education', 'Sociology of Education'],
+      },
+      'School of Medicine': {
+        'Bachelor of Medicine & Bachelor of Surgery (MBChB)': ['Human Anatomy I', 'Human Physiology I', 'Biochemistry I', 'Introduction to Medical Ethics'],
+      },
+      'School of Law': {
+        'Bachelor of Laws (LLB)': ['Legal Systems & Methods', 'Law of Contract I', 'Constitutional Law I', 'Law of Torts'],
+      },
+    },
+    'Egerton University': {
+      'Faculty of Agriculture': {
+        'BSc. Agriculture': ['Principles of Crop Production', 'Introductory Soil Science', 'Agricultural Economics I', 'Animal Production I'],
+        'BSc. Horticulture': ['Principles of Crop Production', 'Plant Propagation', 'Introductory Soil Science', 'Botany'],
+        'BSc. Soil, Environment and Land Use Management': ['Introductory Soil Science', 'Soil Fertility & Nutrient Management', 'Land Use Planning', 'Environmental Chemistry'],
+        'BSc. Animal Science and Technology': ['Animal Nutrition I', 'Animal Physiology', 'Genetics & Animal Breeding', 'Livestock Production Systems'],
+        'BSc. Dairy Technology and Management': ['Dairy Chemistry', 'Milk Processing I', 'Dairy Microbiology', 'Animal Nutrition I'],
+        'BSc. Food Science and Technology': ['Food Chemistry I', 'Food Microbiology', 'Introduction to Food Processing', 'Human Nutrition I'],
+        'BSc. Agricultural Economics': ['Principles of Economics I', 'Farm Management', 'Agricultural Marketing', 'Statistics for Agriculture'],
+        'Bachelor of Agribusiness Management': ['Principles of Agribusiness', 'Farm Management', 'Agricultural Economics I', 'Crop Production I'],
+      },
+      'Faculty of Arts & Social Sciences': {
+        'Bachelor of Arts': ['Introduction to Philosophy', 'Introduction to Sociology', 'Communication Skills', 'Introduction to Literature'],
+        'BA. Criminology and Security Studies': ['Introduction to Criminology', 'Introduction to Sociology', 'Criminal Law I', 'Research Methods I'],
+        'BSc. Economics and Statistics': ['Microeconomics I', 'Introduction to Statistics', 'Mathematics for Economists', 'Macroeconomics I'],
+        'BA. Economics and Sociology': ['Microeconomics I', 'Introduction to Sociology', 'Macroeconomics I', 'Social Theory I'],
+        'BA. Economics and History': ['Microeconomics I', 'Introduction to History', 'Macroeconomics I', 'African History I'],
+        'Bachelor of Library and Information Science': ['Introduction to Library Science', 'Information Sources & Services', 'Cataloguing & Classification I', 'Reference Services'],
+        'BA. Communication and Media': ['Introduction to Mass Communication', 'Media Writing I', 'Media Ethics & Law', 'Introduction to Public Relations'],
+        'BA. Sociology and Religious Studies': ['Introduction to Sociology', 'Introduction to Religious Studies', 'Social Theory I', 'World Religions'],
+        'BA. Gender and Development Studies': ['Introduction to Gender Studies', 'Gender & Development Theory', 'Introduction to Sociology', 'Research Methods I'],
+      },
+      'Faculty of Commerce': {
+        'Bachelor of Commerce': ['Financial Accounting I', 'Principles of Economics I', 'Business Statistics', 'Business Law'],
+        'Bachelor of Procurement and Supply Chain Management': ['Introduction to Procurement', 'Supply Chain Fundamentals', 'Business Statistics', 'Principles of Economics I'],
+        'Bachelor of Entrepreneurship and Small Business Management': ['Introduction to Entrepreneurship', 'Business Plan Development', 'Principles of Marketing', 'Small Business Finance'],
+      },
+      'Faculty of Education & Community Studies': {
+        'BSc. Agricultural Education and Extension': ['Principles of Crop Production', 'Extension Education Methods', 'Educational Psychology', 'Agricultural Economics I'],
+        'BSc. Agriculture and Human Ecology': ['Principles of Crop Production', 'Introduction to Human Ecology', 'Family & Consumer Studies', 'Nutrition I'],
+        'BSc. Community Development': ['Introduction to Community Development', 'Introduction to Sociology', 'Project Planning & Management', 'Research Methods I'],
+        'BSc. Clothing, Textiles and Interior Design': ['Introduction to Textiles', 'Clothing Construction I', 'Principles of Interior Design', 'Textile Science'],
+        'Bachelor of Education (Arts)': ['Educational Psychology', 'Curriculum Studies', 'Philosophy of Education', 'Teaching Methods I'],
+        'Bachelor of Education (Science)': ['Educational Psychology', 'Curriculum Studies', 'Science Teaching Methods', 'Educational Technology'],
+        'Bachelor of Psychology': ['Introduction to Psychology', 'Developmental Psychology', 'Social Psychology', 'Research Methods in Psychology'],
+        'Bachelor of Early Childhood Development Education': ['Foundations of Early Childhood Education', 'Child Growth & Development', 'Curriculum for Early Years', 'Educational Psychology'],
+      },
+      'Faculty of Engineering & Technology': {
+        'BSc. Agricultural Engineering': ['Engineering Mathematics I', 'Engineering Drawing', 'Farm Power & Machinery', 'Fluid Mechanics I'],
+        'BSc. Water and Environmental Engineering': ['Engineering Mathematics I', 'Hydrology I', 'Fluid Mechanics I', 'Environmental Engineering Principles'],
+        'BSc. Manufacturing Engineering and Technology': ['Engineering Mathematics I', 'Engineering Mechanics', 'Manufacturing Processes I', 'Engineering Drawing'],
+        'BSc. Instrumentation and Control Engineering': ['Engineering Mathematics I', 'Circuit Theory I', 'Control Systems I', 'Digital Electronics'],
+        'Bachelor of Industrial Technology': ['Engineering Mathematics I', 'Workshop Technology', 'Engineering Drawing', 'Materials Science I'],
+      },
+      'Faculty of Environment & Resources Development': {
+        'BSc. Natural Resources Management': ['Introduction to Natural Resources', 'Ecology I', 'Soil & Water Conservation', 'Environmental Policy'],
+        'BSc. Ecotourism and Hospitality Management': ['Principles of Ecotourism', 'Introduction to Hospitality Management', 'Wildlife Conservation', 'Ecology I'],
+        'BSc. Wildlife Enterprise Management': ['Introduction to Wildlife Management', 'Wildlife Ecology', 'Wildlife Enterprise & Utilization', 'Ecology I'],
+        'BSc. Integrated Forest Resources Management': ['Introduction to Forestry', 'Forest Ecology', 'Silviculture I', 'Soil Science'],
+        'BSc. Dryland Resource Management': ['Introduction to Dryland Ecosystems', 'Soil & Water Conservation', 'Range Management I', 'Ecology I'],
+        'BSc. Environmental Science': ['Introduction to Environmental Science', 'Ecology I', 'Environmental Chemistry', 'Environmental Impact Assessment'],
+      },
+      'Faculty of Health Sciences': {
+        'Bachelor of Medicine and Bachelor of Surgery (MBChB)': ['Human Anatomy I', 'Human Physiology I', 'Medical Biochemistry', 'Introduction to Medical Ethics'],
+        'BSc. Clinical Medicine': ['Human Anatomy I', 'Human Physiology I', 'Clinical Skills I', 'Medical Microbiology'],
+        'Bachelor of Science in Nursing': ['Human Anatomy', 'Human Physiology', 'Fundamentals of Nursing I', 'Microbiology'],
+        'BSc. Foods, Nutrition and Dietetics': ['Human Nutrition I', 'Food Science I', 'Human Anatomy & Physiology', 'Biochemistry I'],
+      },
+      'Faculty of Law': {
+        'Bachelor of Laws (LLB)': ['Legal Systems & Methods', 'Law of Contract I', 'Constitutional Law I', 'Law of Torts'],
+      },
+      'Faculty of Science': {
+        'BSc. Applied Aquatic Sciences': ['Introduction to Aquatic Sciences', 'Limnology', 'Fisheries Biology I', 'Ecology I'],
+        'BSc. Botany': ['General Botany', 'Plant Anatomy', 'Plant Physiology I', 'Genetics I'],
+        'BSc. Zoology': ['General Zoology', 'Animal Diversity', 'Comparative Anatomy', 'Genetics I'],
+        'BSc. Chemistry': ['General Chemistry I', 'Organic Chemistry I', 'Inorganic Chemistry I', 'Physical Chemistry I'],
+        'BSc. Mathematics': ['Calculus I', 'Linear Algebra I', 'Discrete Mathematics', 'Introduction to Statistics'],
+        'BSc. Physics': ['Mechanics I', 'Electricity & Magnetism', 'Mathematical Methods I', 'Thermal Physics'],
+        'BSc. Geography': ['Introduction to Physical Geography', 'Introduction to Human Geography', 'Cartography & GIS I', 'Environmental Geography'],
+        'BSc. Biochemistry and Molecular Biology': ['General Biochemistry I', 'Cell Biology', 'Organic Chemistry I', 'Genetics I'],
+        'BSc. Biomedical Science and Technology': ['Human Anatomy & Physiology', 'Medical Microbiology', 'Biochemistry I', 'Introduction to Biomedical Technology'],
+        'BSc. Applied Computer Science': ['Introduction to Programming', 'Computer Organization', 'Database Systems I', 'Calculus I'],
+        'BSc. Computer Science': ['Introduction to Programming', 'Discrete Mathematics', 'Data Structures & Algorithms', 'Calculus I'],
+        'BSc. Actuarial Science': ['Financial Mathematics I', 'Probability & Statistics I', 'Life Contingencies I', 'Calculus I'],
+        'BSc. Statistics': ['Introduction to Statistics', 'Probability I', 'Statistical Methods I', 'Calculus I'],
+      },
+      'Faculty of Veterinary Medicine & Surgery': {
+        'Bachelor of Veterinary Medicine and Surgery': ['Veterinary Anatomy I', 'Veterinary Physiology I', 'Veterinary Biochemistry', 'Animal Husbandry'],
+        'BSc. Animal Health Management and Production': ['Animal Health & Disease I', 'Veterinary Anatomy I', 'Animal Nutrition I', 'Animal Husbandry'],
+      },
+    },
+    'Technical University of Kenya': {
+      'Faculty of Engineering & the Built Environment': {
+        'BSc. Civil Engineering': ['Engineering Mathematics I', 'Engineering Drawing', 'Fluid Mechanics I', 'Surveying I'],
+        'Bachelor of Architecture': ['Architectural Design Studio I', 'History of Architecture I', 'Building Construction I'],
+      },
+      'Faculty of Applied Sciences & Technology': {
+        'BSc. Applied Physics': ['Mechanics I', 'Electricity & Magnetism', 'Mathematical Methods I', 'Thermal Physics'],
+        'BSc. Applied Statistics with Computing': ['Calculus I', 'Probability I', 'Introduction to Programming', 'Statistical Methods I'],
+      },
+      'Faculty of Social Sciences & Technology': {
+        'Bachelor of Commerce': ['Financial Accounting I', 'Principles of Economics I', 'Business Statistics', 'Business Communication'],
+      },
+    },
+    "Murang'a University of Technology": {
+      'School of Computing & Information Technology': {
+        'BSc. Computer Science': ['Introduction to Programming', 'Data Structures & Algorithms', 'Discrete Mathematics', 'Computer Organization'],
+      },
+      'School of Engineering & Technology': {
+        'BSc. Electrical & Electronic Engineering': ['Circuit Theory I', 'Engineering Mathematics I', 'Digital Electronics', 'Engineering Drawing'],
+      },
+      'School of Business & Economics': {
+        'Bachelor of Commerce': ['Financial Accounting I', 'Principles of Economics I', 'Business Statistics', 'Introduction to Management'],
+      },
+      'School of Agriculture & Environmental Studies': {
+        'BSc. Agriculture': ['Principles of Crop Production', 'Introductory Soil Science', 'Agricultural Economics I', 'Animal Production I'],
+      },
+      'School of Pure, Applied & Health Sciences': {
+        'Bachelor of Science in Nursing': ['Human Anatomy', 'Human Physiology', 'Fundamentals of Nursing I', 'Microbiology'],
+      },
+      'School of Hospitality & Tourism Management': {
+        'Bachelor of Hospitality Management': ['Introduction to Hospitality Industry', 'Food & Beverage Production I', 'Front Office Operations', 'Hospitality Accounting'],
+      },
+      'School of Education': {
+        'Bachelor of Education (Science)': ['Educational Psychology', 'Curriculum Studies', 'Science Teaching Methods', 'Educational Technology'],
+      },
+      'School of Humanities & Social Sciences': {
+        'Bachelor of Arts (Criminology)': ['Introduction to Criminology', 'Introduction to Sociology', 'Research Methods I', 'Criminal Law I'],
+      },
+    },
+    'Maseno University': {
+      'School of Arts & Social Sciences': {
+        'Bachelor of Arts (Sociology)': ['Introduction to Sociology', 'Introduction to Social Anthropology', 'Research Methods I', 'Social Statistics'],
+      },
+      'School of Education': {
+        'Bachelor of Education (Arts)': ['Educational Psychology', 'Curriculum Studies', 'Philosophy of Education', 'Teaching Methods I'],
+      },
+      'School of Physical & Biological Sciences': {
+        'BSc. Ecotourism, Hotel & Institutional Management': ['Principles of Ecotourism', 'Introduction to Hotel Management', 'Ecology I', 'Wildlife Conservation'],
+      },
+      'School of Public Health & Community Development': {
+        'BSc. Public Health': ['Introduction to Public Health', 'Human Anatomy & Physiology', 'Epidemiology I', 'Environmental Health'],
+      },
+      'School of Nursing': {
+        'Bachelor of Science in Nursing': ['Human Anatomy', 'Human Physiology', 'Fundamentals of Nursing I', 'Microbiology'],
+      },
+      'School of Development & Strategic Studies': {
+        'Bachelor of Arts (International Relations & Diplomacy)': ['Introduction to International Relations', 'Political Science I', 'Diplomatic Practice', 'International Law I'],
+      },
+      'School of Business & Economics': {
+        'Bachelor of Business Administration': ['Introduction to Management', 'Principles of Marketing', 'Business Mathematics', 'Financial Accounting I'],
+      },
+      'School of Medicine': {
+        'Bachelor of Medicine & Bachelor of Surgery (MBChB)': ['Human Anatomy I', 'Human Physiology I', 'Medical Biochemistry', 'Introduction to Medical Ethics'],
+      },
+      'School of Law': {
+        'Bachelor of Laws (LLB)': ['Legal Systems & Methods', 'Law of Contract I', 'Constitutional Law I', 'Law of Torts'],
+      },
+      'School of Pharmacy': {
+        'Bachelor of Pharmacy': ['Pharmaceutical Chemistry I', 'Human Anatomy & Physiology', 'Pharmaceutics I'],
+      },
+      'School of Agriculture, Food Security & Environmental Sciences': {
+        'BSc. Agriculture': ['Principles of Crop Production', 'Introductory Soil Science', 'Agricultural Economics I', 'Animal Production I'],
+      },
+      'School of Mathematics & Actuarial Science': {
+        'BSc. Actuarial Science': ['Financial Mathematics I', 'Probability & Statistics I', 'Life Contingencies I', 'Calculus I'],
+      },
+      'School of Computing & Informatics': {
+        'BSc. Computer Science': ['Introduction to Programming', 'Data Structures & Algorithms', 'Discrete Mathematics', 'Computer Organization'],
+      },
+      'School of Planning & Architecture': {
+        'BSc. Urban & Regional Planning': ['Introduction to Planning', 'Planning Theory', 'Surveying I', 'Geospatial Information Science'],
+      },
+    },
+    'University of Embu': {
+      'School of Pure & Applied Sciences': {
+        'BSc. Computer Science': ['Introduction to Programming', 'Discrete Mathematics', 'Data Structures & Algorithms', 'Calculus I'],
+        'BSc. Analytical Chemistry': ['General Chemistry I', 'Organic Chemistry I', 'Analytical Chemistry I', 'Physical Chemistry I'],
+      },
+      'School of Agriculture & Natural Resources': {
+        'BSc. Agriculture': ['Principles of Crop Production', 'Introductory Soil Science', 'Agricultural Economics I', 'Animal Production I'],
+        'BSc. Horticulture': ['Principles of Crop Production', 'Plant Propagation', 'Introductory Soil Science', 'Botany'],
+      },
+      'School of Business & Economics': {
+        'Bachelor of Commerce': ['Financial Accounting I', 'Principles of Economics I', 'Business Statistics', 'Business Law'],
+      },
+      'School of Education': {
+        'Bachelor of Education (Arts)': ['Educational Psychology', 'Curriculum Studies', 'Philosophy of Education', 'Teaching Methods I'],
+      },
+      'School of Law': {
+        'Bachelor of Laws (LLB)': ['Legal Systems & Methods', 'Law of Contract I', 'Constitutional Law I', 'Law of Torts'],
+      },
+      'School of Nursing & Health Sciences': {
+        'Bachelor of Science in Nursing': ['Human Anatomy', 'Human Physiology', 'Fundamentals of Nursing I', 'Microbiology'],
+      },
+    },
+    'Pwani University': {
+      'School of Agricultural Sciences & Agribusiness (SASA)': {
+        'BSc. Agribusiness Management': ['Principles of Agribusiness', 'Farm Management', 'Agricultural Economics I', 'Crop Production I'],
+      },
+      'School of Business & Economics (SBE)': {
+        'Bachelor of Commerce': ['Financial Accounting I', 'Principles of Economics I', 'Business Statistics', 'Introduction to Management'],
+      },
+      'School of Education (SED)': {
+        'Bachelor of Education (Arts)': ['Educational Psychology', 'Curriculum Studies', 'Philosophy of Education', 'Teaching Methods I'],
+      },
+      'School of Environmental & Earth Sciences (SEES)': {
+        'BSc. Environmental Science': ['Introduction to Environmental Science', 'Ecology I', 'Environmental Chemistry', 'Environmental Impact Assessment'],
+      },
+      'School of Health & Human Sciences (SHHS)': {
+        'Bachelor of Science in Nursing': ['Human Anatomy & Physiology', 'Fundamentals of Nursing I', 'Public Health', 'Nutrition & Dietetics'],
+      },
+      'School of Humanities & Social Sciences (SHSS)': {
+        'Bachelor of Arts (Kiswahili)': ['Utangulizi wa Isimu', 'Fasihi ya Kiswahili I', 'Sarufi ya Kiswahili', 'Uandishi wa Kiswahili'],
+      },
+      'School of Pure & Applied Sciences (SPAS)': {
+        'BSc. Marine Biology & Fisheries': ['Introduction to Marine Biology', 'Fisheries Biology I', 'Oceanography', 'Ecology I'],
+      },
+    },
+    'Dedan Kimathi University of Technology': {
+      'School of Business Management & Economics': {
+        'Bachelor of Commerce': ['Financial Accounting I', 'Principles of Economics I', 'Business Statistics', 'Introduction to Management'],
+      },
+      'School of Engineering': {
+        'BSc. Electrical & Electronic Engineering': ['Circuit Theory I', 'Engineering Mathematics I', 'Digital Electronics', 'Engineering Drawing'],
+        'BSc. Mechanical Engineering': ['Engineering Mathematics I', 'Engineering Mechanics', 'Thermodynamics I', 'Engineering Drawing'],
+      },
+      'School of Science': {
+        'BSc. Applied Physics': ['Mechanics I', 'Electricity & Magnetism', 'Mathematical Methods I', 'Thermal Physics'],
+      },
+      'School of Computer Science & Information Technology': {
+        'BSc. Computer Science': ['Introduction to Programming', 'Data Structures & Algorithms', 'Discrete Mathematics', 'Computer Organization'],
+      },
+      'School of Nursing': {
+        'Bachelor of Science in Nursing': ['Human Anatomy', 'Human Physiology', 'Fundamentals of Nursing I', 'Microbiology'],
+      },
+    },
+    'Chuka University': {
+      'Faculty of Agriculture': {
+        'BSc. Agriculture': ['Principles of Crop Production', 'Introductory Soil Science', 'Agricultural Economics I', 'Animal Production I'],
+      },
+      'Faculty of Business Studies': {
+        'Bachelor of Commerce': ['Financial Accounting I', 'Principles of Economics I', 'Business Statistics', 'Introduction to Management'],
+      },
+      'Faculty of Education': {
+        'Bachelor of Education (Arts)': ['Educational Psychology', 'Curriculum Studies', 'Philosophy of Education', 'Teaching Methods I'],
+      },
+      'Faculty of Environmental Studies & Resource Development': {
+        'BSc. Environmental Science': ['Introduction to Environmental Science', 'Ecology I', 'Environmental Chemistry', 'Environmental Impact Assessment'],
+      },
+      'Faculty of Engineering': {
+        'BSc. Civil Engineering': ['Engineering Mathematics I', 'Engineering Drawing', 'Fluid Mechanics I', 'Surveying I'],
+      },
+      'Faculty of Humanities & Social Sciences': {
+        'Bachelor of Arts (Sociology)': ['Introduction to Sociology', 'Introduction to Social Anthropology', 'Research Methods I', 'Social Statistics'],
+      },
+      'Faculty of Science & Technology': {
+        'BSc. Computer Science': ['Introduction to Programming', 'Data Structures & Algorithms', 'Discrete Mathematics', 'Computer Organization'],
+      },
+      'Faculty of Law': {
+        'Bachelor of Laws (LLB)': ['Legal Systems & Methods', 'Law of Contract I', 'Constitutional Law I', 'Law of Torts'],
+      },
+      'School of Nursing & Public Health': {
+        'Bachelor of Science in Nursing': ['Human Anatomy', 'Human Physiology', 'Fundamentals of Nursing I', 'Microbiology'],
+      },
+    },
+    'Kisii University': {
+      'School of Business & Economics': {
+        'Bachelor of Commerce': ['Financial Accounting I', 'Principles of Economics I', 'Business Statistics', 'Introduction to Management'],
+      },
+      'School of Agriculture & Natural Resource Management': {
+        'BSc. Agriculture': ['Principles of Crop Production', 'Introductory Soil Science', 'Agricultural Economics I', 'Animal Production I'],
+      },
+      'School of Information Science & Technology': {
+        'BSc. Computer Science': ['Introduction to Programming', 'Data Structures & Algorithms', 'Discrete Mathematics', 'Computer Organization'],
+      },
+      'School of Law': {
+        'Bachelor of Laws (LLB)': ['Legal Systems & Methods', 'Law of Contract I', 'Constitutional Law I', 'Law of Torts'],
+      },
+      'School of Education & Human Resource Development': {
+        'Bachelor of Education (Arts)': ['Educational Psychology', 'Curriculum Studies', 'Philosophy of Education', 'Teaching Methods I'],
+      },
+      'School of Health Sciences': {
+        'Bachelor of Science in Nursing': ['Human Anatomy', 'Human Physiology', 'Fundamentals of Nursing I', 'Microbiology'],
+      },
+      'Faculty of Pure & Applied Sciences': {
+        'BSc. Environmental Science': ['Introduction to Environmental Science', 'Ecology I', 'Environmental Chemistry', 'Environmental Impact Assessment'],
+      },
+      'School of Arts & Social Sciences': {
+        'Bachelor of Arts (Social Work)': ['Introduction to Social Work', 'Introduction to Sociology', 'Human Behaviour & Social Environment', 'Social Work Practice I'],
+      },
+    },
+    'Masinde Muliro University of Science and Technology': {
+      'School of Agriculture & Veterinary Sciences': {
+        'BSc. Agriculture': ['Principles of Crop Production', 'Introductory Soil Science', 'Agricultural Economics I', 'Animal Production I'],
+      },
+      'School of Arts & Social Sciences': {
+        'Bachelor of Arts (Sociology)': ['Introduction to Sociology', 'Introduction to Social Anthropology', 'Research Methods I', 'Social Statistics'],
+      },
+      'School of Business & Economics': {
+        'Bachelor of Commerce': ['Financial Accounting I', 'Principles of Economics I', 'Business Statistics', 'Introduction to Management'],
+      },
+      'School of Computing & Informatics': {
+        'BSc. Information Systems & Knowledge Management': ['Introduction to Programming', 'Database Systems I', 'Information Systems Theory', 'Discrete Mathematics'],
+      },
+      'School of Disaster Management & Humanitarian Assistance': {
+        'BSc. Disaster Management': ['Introduction to Disaster Management', 'Hazard & Risk Assessment', 'Humanitarian Principles', 'Emergency Response Planning'],
+      },
+      'School of Education': {
+        'Bachelor of Education (Science)': ['Educational Psychology', 'Curriculum Studies', 'Science Teaching Methods', 'Educational Technology'],
+      },
+      'School of Engineering & the Built Environment': {
+        'BSc. Civil Engineering': ['Engineering Mathematics I', 'Engineering Drawing', 'Fluid Mechanics I', 'Surveying I'],
+      },
+      'School of Medicine': {
+        'Bachelor of Medicine & Bachelor of Surgery (MBChB)': ['Human Anatomy I', 'Human Physiology I', 'Medical Biochemistry', 'Introduction to Medical Ethics'],
+      },
+      'School of Natural Sciences': {
+        'BSc. Biological Sciences': ['Cell Biology', 'General Botany', 'General Zoology', 'Genetics I'],
+      },
+      'School of Nursing, Midwifery & Paramedical Sciences': {
+        'Bachelor of Science in Nursing': ['Human Anatomy', 'Human Physiology', 'Fundamentals of Nursing I', 'Microbiology'],
+      },
+    },
+    'Kirinyaga University': {
+      'School of Health Sciences': {
+        'Bachelor of Science in Nursing': ['Human Anatomy', 'Human Physiology', 'Fundamentals of Nursing I', 'Microbiology'],
+      },
+      'School of Pure & Applied Sciences': {
+        'BSc. Software Engineering': ['Introduction to Programming', 'Discrete Mathematics', 'Software Engineering Principles', 'Data Structures & Algorithms'],
+        'BSc. Mathematics & Computer Science': ['Calculus I', 'Introduction to Programming', 'Linear Algebra', 'Discrete Mathematics'],
+      },
+      'School of Hospitality & Textile Technology': {
+        'BSc. Fashion Design & Textile Technology': ['Introduction to Textiles', 'Fashion Design Fundamentals', 'Pattern Making I', 'Textile Science'],
+      },
+      'School of Engineering & Technology': {
+        'BSc. Electrical & Electronic Engineering': ['Circuit Theory I', 'Engineering Mathematics I', 'Digital Electronics', 'Engineering Drawing'],
+      },
+      'School of Business & Education': {
+        'Bachelor of Commerce': ['Financial Accounting I', 'Principles of Economics I', 'Business Statistics', 'Introduction to Management'],
+        'Bachelor of Education (Arts)': ['Educational Psychology', 'Curriculum Studies', 'Philosophy of Education', 'Teaching Methods I'],
+      },
+    },
+  };
+
+  // ---- TVET data: top 15 public TVET institutions (National
+  // Polytechnics and Technical/Vocational Training Institutes) in
+  // Kenya, each with a representative sample of the certificate /
+  // diploma courses they offer. Filed under the "College" level. ----
+  const TVET_DATA = {
+    'The Kenya Coast National Polytechnic': [
+      'Diploma in Electrical & Electronic Engineering',
+      'Diploma in Building & Civil Engineering',
+      'Diploma in Mechanical Engineering (Marine Option)',
+      'Diploma in Information Communication Technology',
+      'Certificate in Fashion Design & Garment Making',
+      'Diploma in Food & Beverage Production',
+      'Diploma in Maritime Studies',
+      'Diploma in Business Management',
+      'Certificate in Cosmetology & Hairdressing',
+      'Diploma in Applied Chemistry',
+      'Certificate in Tour Guiding Operations',
+      'Diploma in Health Records & Information Technology',
+    ],
+    'The Eldoret National Polytechnic': [
+      'Diploma in Electrical & Electronic Engineering',
+      'Diploma in Building & Civil Engineering',
+      'Diploma in Automotive Engineering',
+      'Diploma in Information Communication Technology',
+      'Certificate in Welding & Fabrication Technology',
+      'Diploma in Business Management',
+      'Higher Diploma in Human Resource Management',
+      'Diploma in Mechanical Engineering (Plant Option)',
+      'Diploma in Applied Chemistry',
+      'Diploma in Pharmacy',
+      'Diploma in Medical Laboratory Technology',
+      'Diploma in Accounting (KASNEB)',
+    ],
+    'The Kisumu National Polytechnic': [
+      'Diploma in Electrical & Electronic Engineering',
+      'Diploma in Building & Civil Engineering',
+      'Diploma in Mechanical Engineering (Plant Option)',
+      'Diploma in Information Communication Technology',
+      'Certificate in Hairdressing & Beauty Therapy',
+      'Diploma in Sales & Marketing',
+      'Diploma in Automotive Engineering',
+      'Diploma in Fashion Design & Clothing Technology',
+      'Certificate in Quantity Surveying',
+      'Diploma in Medical Laboratory Technology',
+      'Diploma in Nutrition & Dietetics',
+      'Diploma in Supply Chain Management',
+    ],
+    'The Kabete National Polytechnic': [
+      'Diploma in Electrical & Electronic Engineering',
+      'Diploma in Building & Civil Engineering',
+      'Diploma in Automotive Engineering',
+      'Diploma in Information Communication Technology',
+      'Certificate in Plumbing Technology',
+      'Diploma in Fashion Design & Garment Making',
+      'Diploma in Leather Technology',
+      'Certificate in Welding & Fabrication Technology',
+      'Diploma in Quantity Surveying',
+      'Diploma in Refrigeration & Air Conditioning',
+    ],
+    'The Nyeri National Polytechnic': [
+      'Diploma in Electrical & Electronic Engineering',
+      'Diploma in Building & Civil Engineering',
+      'Diploma in Mechanical Engineering (Production Option)',
+      'Diploma in Information Communication Technology',
+      'Certificate in Catering & Accommodation',
+      'Diploma in Agricultural Engineering',
+      'Diploma in Land Surveying',
+      'Certificate in Renewable Energy Technology',
+      'Diploma in Water Engineering',
+      'Diploma in Food & Beverage Production',
+    ],
+    'The Sigalagala National Polytechnic': [
+      'Diploma in Electrical & Electronic Engineering',
+      'Diploma in Building & Civil Engineering',
+      'Diploma in Automotive Engineering',
+      'Diploma in Information Communication Technology',
+      'Certificate in Welding & Fabrication Technology',
+      'Diploma in Food Technology',
+      'Diploma in Instrumentation & Control Engineering',
+      'Certificate in Fashion Design & Garment Making',
+      'Diploma in Building Technology',
+      'Diploma in Business Management',
+    ],
+    'The North Eastern National Polytechnic': [
+      'Diploma in Electrical & Electronic Engineering',
+      'Diploma in Building & Civil Engineering',
+      'Certificate in Automotive Engineering',
+      'Diploma in Information Communication Technology',
+      'Certificate in Business Management',
+      'Certificate in Water Technology',
+      'Certificate in Solar & Renewable Energy Technology',
+      'Certificate in Range & Livestock Management',
+      'Certificate in Welding & Fabrication Technology',
+    ],
+    'The Meru National Polytechnic': [
+      'Diploma in Electrical & Electronic Engineering',
+      'Diploma in Building & Civil Engineering',
+      'Diploma in Mechanical Engineering (Automotive Option)',
+      'Diploma in Information Communication Technology',
+      'Diploma in Agricultural Engineering',
+      'Certificate in Fashion Design & Garment Making',
+      'Diploma in Land Surveying',
+      'Certificate in Leather Goods & Footwear Technology',
+      'Diploma in Food & Beverage Production',
+      'Certificate in Welding & Fabrication Technology',
+    ],
+    'The Kitale National Polytechnic': [
+      'Diploma in Electrical & Electronic Engineering',
+      'Diploma in Building & Civil Engineering',
+      'Diploma in Automotive Engineering',
+      'Diploma in Information Communication Technology',
+      'Certificate in Catering & Accommodation',
+      'Diploma in Business Management',
+      'Diploma in Agricultural Engineering',
+      'Diploma in Land Surveying',
+      'Diploma in Food Technology',
+      'Certificate in Welding & Fabrication Technology',
+    ],
+    'Rift Valley Technical Training Institute': [
+      'Diploma in Electrical & Electronic Engineering',
+      'Diploma in Building & Civil Engineering',
+      'Diploma in Automotive Engineering',
+      'Diploma in Information Communication Technology',
+      'Certificate in Welding & Fabrication Technology',
+      'Diploma in Water Engineering',
+      'Certificate in Plumbing Technology',
+      'Diploma in Business Management',
+      'Certificate in Fashion Design & Garment Making',
+    ],
+    'Kenya Technical Trainers College (KTTC)': [
+      'Diploma in Technical Trainer Education (Electrical & Electronics Engineering)',
+      'Diploma in Technical Trainer Education (Building & Construction)',
+      'Diploma in Technical Trainer Education (Automotive Engineering)',
+      'Diploma in Technical Trainer Education (Computer Studies)',
+      'Diploma in Technical Trainer Education (Fashion Design)',
+      'Diploma in Technical Trainer Education (Housekeeping & Laundry Management)',
+      'Diploma in Technical Trainer Education (Agriculture)',
+      'Higher Diploma in Education Management',
+      'Higher Diploma in Human Resource Management',
+      'Higher Diploma in Library & Information Management',
+    ],
+    'Nairobi Technical Training Institute': [
+      'Diploma in Electrical & Electronic Engineering',
+      'Diploma in Building & Civil Engineering',
+      'Diploma in Automotive Engineering',
+      'Diploma in Information Communication Technology',
+      'Certificate in Hairdressing & Beauty Therapy',
+      'Diploma in Business Management',
+      'Diploma in Quantity Surveying',
+      'Diploma in Refrigeration & Air Conditioning',
+      'Certificate in Welding & Fabrication Technology',
+      'Diploma in Fashion Design & Garment Making',
+    ],
+    "Sang'alo National Polytechnic": [
+      'Diploma in Electrical & Electronic Engineering',
+      'Diploma in Building & Civil Engineering',
+      'Diploma in Mechanical Engineering',
+      'Diploma in Information Communication Technology',
+      'Certificate in Food & Beverage Production',
+      'Diploma in Agricultural Engineering',
+      'Diploma in General Agriculture',
+      'Diploma in Entrepreneurial Agriculture',
+      'Diploma in Land Survey',
+      'Diploma in Analytical Chemistry',
+      'Diploma in Textile Technology',
+      'Diploma in Cooperative Management',
+    ],
+    'Bureti Technical Training Institute': [
+      'Diploma in Electrical & Electronic Engineering',
+      'Certificate in Building Technology',
+      'Diploma in Automotive Engineering',
+      'Certificate in Information Communication Technology',
+      'Certificate in Fashion Design & Garment Making',
+      'Certificate in Business Management',
+      'Certificate in Catering & Accommodation',
+      'Certificate in Welding & Fabrication Technology',
+    ],
+    'Kaiboi Technical Training Institute': [
+      'Diploma in Electrical & Electronic Engineering',
+      'Certificate in Building Technology',
+      'Diploma in Automotive Engineering',
+      'Diploma in Information Communication Technology',
+      'Certificate in Catering & Accommodation',
+      'Certificate in Welding & Fabrication Technology',
+      'Certificate in Agriculture',
+      'Certificate in Business Management',
+    ],
+  };
+
+  const els = {
+    headerEl: document.getElementById('headerEl'),
+    eyebrow: document.getElementById('eyebrow'),
+    titleEl: document.getElementById('titleEl'),
+    taglineEl: document.getElementById('taglineEl'),
+    deskBtn: document.getElementById('deskBtn'),
+    roomBtn: document.getElementById('roomBtn'),
+    roomLookup: document.getElementById('roomLookup'),
+    searchInput: document.getElementById('searchInput'),
+    deskStats: document.getElementById('deskStats'),
+    deskView: document.getElementById('deskView'),
+    dropPane: document.getElementById('dropPane'),
+    browseBtn: document.getElementById('browseBtn'),
+    fileInput: document.getElementById('fileInput'),
+    fileChip: document.getElementById('fileChip'),
+    form: document.getElementById('uploadForm'),
+    fLevel: document.getElementById('fLevel'),
+    fSubject: document.getElementById('fSubject'),
+    fSubjectSelect: document.getElementById('fSubjectSelect'),
+    fSubjectLabel: document.getElementById('fSubjectLabel'),
+    uniCascadeUni: document.getElementById('uniCascadeUni'),
+    uniCascadeFaculty: document.getElementById('uniCascadeFaculty'),
+    uniCascadeCourse: document.getElementById('uniCascadeCourse'),
+    uniCascadeUnit: document.getElementById('uniCascadeUnit'),
+    fUni: document.getElementById('fUni'),
+    fFaculty: document.getElementById('fFaculty'),
+    fCourse: document.getElementById('fCourse'),
+    fUnit: document.getElementById('fUnit'),
+    stampBtn: document.getElementById('stampBtn'),
+    formNote: document.getElementById('formNote'),
+    roomNotice: document.getElementById('roomNotice'),
+    deskCatalogHead: document.getElementById('deskCatalogHead'),
+    levelMenu: document.getElementById('levelMenu'),
+    levelMenuBtn: document.getElementById('levelMenuBtn'),
+    levelMenuLabel: document.getElementById('levelMenuLabel'),
+    levelMenuPanel: document.getElementById('levelMenuPanel'),
+    tabs: document.getElementById('tabs'),
+    sortSelect: document.getElementById('sortSelect'),
+    deskSearchBox: document.getElementById('deskSearchBox'),
+    deskSearchInput: document.getElementById('deskSearchInput'),
+    resultCount: document.getElementById('resultCount'),
+    grid: document.getElementById('grid'),
+    footerCount: document.getElementById('footerCount'),
+    statAll: document.getElementById('statAll'),
+    statLower: document.getElementById('statLower'),
+    statJunior: document.getElementById('statJunior'),
+    statSenior: document.getElementById('statSenior'),
+    statCollege: document.getElementById('statCollege'),
+    statUniversity: document.getElementById('statUniversity'),
+    statEbook: document.getElementById('statEbook'),
+    statEjournal: document.getElementById('statEjournal'),
+    statExam: document.getElementById('statExam'),
+    overlay: document.getElementById('overlay'),
+    slip: document.getElementById('slip'),
+    lockOverlay: document.getElementById('lockOverlay'),
+    lockInput: document.getElementById('lockInput'),
+    lockError: document.getElementById('lockError'),
+    lockSubmit: document.getElementById('lockSubmit'),
+    lockCancel: document.getElementById('lockCancel'),
+    payOverlay: document.getElementById('payOverlay'),
+    payPanel: document.getElementById('payPanel'),
+    freeAccessToggle: document.getElementById('freeAccessToggle'),
+    toggleLabelPaid: document.getElementById('toggleLabelPaid'),
+    toggleLabelFree: document.getElementById('toggleLabelFree'),
+    accessToggleDesc: document.getElementById('accessToggleDesc'),
+    accessStatusBar: document.getElementById('accessStatusBar'),
+    viewerOverlay: document.getElementById('viewerOverlay'),
+    viewerFrameWrap: document.getElementById('viewerFrameWrap'),
+    viewerTitle: document.getElementById('viewerTitle'),
+    viewerCallNumber: document.getElementById('viewerCallNumber'),
+    viewerClose: document.getElementById('viewerClose'),
+    zoomControls: document.getElementById('zoomControls'),
+    zoomInBtn: document.getElementById('zoomInBtn'),
+    zoomOutBtn: document.getElementById('zoomOutBtn'),
+    zoomResetBtn: document.getElementById('zoomResetBtn'),
+    zoomLevel: document.getElementById('zoomLevel'),
+  };
+
+  function formatSize(bytes){
+    if(bytes < 1024) return bytes + ' B';
+    if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/(1024*1024)).toFixed(1) + ' MB';
+  }
+  function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+  function extOf(name){ return (name.split('.').pop() || '').toLowerCase(); }
+
+  // ---- Global protection deterrents ----
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+  document.addEventListener('keydown', function(e){
+    const k = e.key.toLowerCase();
+    const isCmd = e.ctrlKey || e.metaKey;
+    const blockedCombo = isCmd && ['p','s','u'].includes(k); // print, save, view-source
+    const devtools = e.key === 'F12' || (isCmd && e.shiftKey && ['i','j','c'].includes(k));
+    if(blockedCombo || devtools){ e.preventDefault(); }
+  });
+
+  document.addEventListener('copy', function(e){
+    const sel = document.getSelection();
+    if(!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+    let node = sel.anchorNode;
+    const el = node && (node.nodeType === 1 ? node : node.parentElement);
+    if(el && el.closest('.slip, .viewer-frame-wrap, .docx-render, .catalog-card') && !el.closest('input, textarea')){
+      e.preventDefault();
+    }
+  });
+
+  window.addEventListener('beforeprint', function(){
+    closeViewer();
+    closeSlip();
+  });
+
+  // ---- Role switching (Filing Desk gated by password) ----
+  function setRole(role){
+    if(role === 'desk' && !state.unlockedDesk){
+      showLock();
+      return;
+    }
+    applyRole(role);
+  }
+
+  function applyRole(role){
+    state.role = role;
+    const isRoom = role === 'room';
+    els.deskBtn.classList.toggle('active', !isRoom);
+    els.roomBtn.classList.toggle('active', isRoom);
+    els.headerEl.classList.toggle('room', isRoom);
+    els.deskView.hidden = isRoom;
+    els.roomLookup.hidden = !isRoom;
+    els.deskStats.hidden = isRoom;
+    els.roomNotice.hidden = !isRoom;
+    els.deskCatalogHead.hidden = isRoom;
+    els.sortSelect.hidden = !isRoom;
+    els.deskSearchBox.hidden = isRoom;
+
+    if(isRoom){
+      els.eyebrow.textContent = 'Digital Repository · Reading Room';
+      els.titleEl.textContent = 'Ben Asibwa E-resources Information Repository';
+      els.taglineEl.textContent = 'Browse the collection and read documents directly in the Reading Room — no downloads.';
+    } else {
+      els.eyebrow.textContent = 'Digital Repository · Filing Desk';
+      els.titleEl.textContent = 'Ben Asibwa E-resources information repositories';
+      els.taglineEl.textContent = 'Upload e-books, periodicals, and past exam papers for every level, from Lower School through University.';
+    }
+    render();
+    updateAccessStatusBar();
+  }
+  els.deskBtn.addEventListener('click', () => setRole('desk'));
+  els.roomBtn.addEventListener('click', () => setRole('room'));
+
+  // ---- Password lock ----
+  function showLock(){
+    els.lockOverlay.classList.add('open');
+    els.lockInput.value = '';
+    els.lockError.textContent = '';
+    setTimeout(() => els.lockInput.focus(), 50);
+  }
+  function hideLock(){ els.lockOverlay.classList.remove('open'); }
+  function tryUnlock(){
+    if(els.lockInput.value === DESK_PASSWORD){
+      state.unlockedDesk = true;
+      hideLock();
+      applyRole('desk');
+    } else {
+      els.lockError.textContent = 'Incorrect password — try again.';
+      els.lockInput.value = '';
+      els.lockInput.focus();
+    }
+  }
+  els.lockSubmit.addEventListener('click', tryUnlock);
+  els.lockInput.addEventListener('keydown', e => { if(e.key === 'Enter') tryUnlock(); });
+  els.lockCancel.addEventListener('click', () => { hideLock(); applyRole('room'); });
+  els.lockOverlay.addEventListener('click', e => { if(e.target === els.lockOverlay){ hideLock(); applyRole('room'); } });
+
+  // ---- Pay-to-read gate settings (IntaSend STK Push) ----
+  const PAY_PLANS = [
+    { id: '1h',  label: '1 hour',   price: 3,  hours: 1 },
+    { id: '5h',  label: '5 hours',  price: 10, hours: 5 },
+    { id: '24h', label: '24 hours', price: 20, hours: 24 },
+  ];
+  const PAY_AMOUNT_KSH = PAY_PLANS.find(p => p.id === '1h').price;
+  const PAY_ACCESS_KEY = "stacksReadAccessUntil";
+  const PAY_ACCESS_PLAN_KEY = "stacksReadAccessPlan";
+
+  function validKenyanPhone(v){
+    return /^(?:\+254|254|0)(7|1)\d{8}$/.test(v.trim());
+  }
+
+  function renderPayStep1(){
+    if(!state.payPlan) state.payPlan = PAY_PLANS[0];
+    const planCards = PAY_PLANS.map(p => `
+      <button type="button" class="pay-plan-option${state.payPlan.id === p.id ? ' selected' : ''}" data-plan="${p.id}">
+        <span class="pay-plan-price">KSH ${p.price}</span>
+        <span class="pay-plan-duration">${p.label}</span>
+      </button>`).join('');
+    els.payPanel.innerHTML = `
+      <svg class="pay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4" stroke-linecap="round"/></svg>
+      <h3>Reading Room Access</h3>
+      <p class="pay-sub">Choose how long you'd like to read for, then enter your M-Pesa number. You'll get a prompt on your phone to approve it — no code to copy.</p>
+      <div class="pay-plan-list">${planCards}</div>
+      <div class="pay-field">
+        <label for="payPhoneInput">M-Pesa number</label>
+        <input type="tel" id="payPhoneInput" placeholder="e.g. 0712 345 678" autocomplete="tel" value="${escapeHtml(state.payPhone)}">
+      </div>
+      <div class="pay-error" id="payError"></div>
+      <div class="pay-actions">
+        <button type="button" class="stamp-btn" id="payNextBtn">Send payment request</button>
+        <button type="button" class="pass-cancel" id="payCancelBtn">Cancel</button>
+      </div>
+      <p class="pay-note">You'll enter your M-Pesa PIN on your own phone — this page never asks for it.</p>`;
+    els.payPanel.querySelectorAll('.pay-plan-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.payPlan = PAY_PLANS.find(p => p.id === btn.dataset.plan) || PAY_PLANS[0];
+        els.payPanel.querySelectorAll('.pay-plan-option').forEach(b => b.classList.toggle('selected', b.dataset.plan === state.payPlan.id));
+      });
+    });
+    document.getElementById('payNextBtn').addEventListener('click', async () => {
+      const phone = document.getElementById('payPhoneInput').value.trim();
+      if(!validKenyanPhone(phone)){
+        document.getElementById('payError').textContent = 'Enter a valid M-Pesa number, e.g. 0712345678.';
+        return;
+      }
+      state.payPhone = phone;
+      await startStkPush(phone, state.payPlan);
+    });
+    document.getElementById('payCancelBtn').addEventListener('click', () => { state.pendingReadItem = null; hidePayGate(); });
+    document.getElementById('payPhoneInput').addEventListener('keydown', e => { if(e.key === 'Enter') document.getElementById('payNextBtn').click(); });
+    setTimeout(() => document.getElementById('payPhoneInput').focus(), 50);
+  }
+
+  async function startStkPush(phone, plan){
+    const btn = document.getElementById('payNextBtn');
+    const errEl = document.getElementById('payError');
+    errEl.textContent = '';
+    if(btn){ btn.disabled = true; btn.textContent = 'Sending prompt to your phone…'; }
+    try{
+      const res = await fetch(`${EDGE_FUNCTIONS_BASE}/stk-initiate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone_number: phone, plan_id: plan.id }),
+      });
+      const data = await res.json();
+      if(!res.ok || !data.invoice_id){
+        errEl.textContent = data.error || 'Could not start the payment — try again.';
+        if(btn){ btn.disabled = false; btn.textContent = 'Send payment request'; }
+        return;
+      }
+      renderPayWaiting(data.invoice_id, plan);
+      pollStkStatus(data.invoice_id, plan);
+    } catch(err){
+      console.error(err);
+      errEl.textContent = 'Network error — check your connection and try again.';
+      if(btn){ btn.disabled = false; btn.textContent = 'Send payment request'; }
+    }
+  }
+
+  function renderPayWaiting(invoiceId, plan){
+    els.payPanel.innerHTML = `
+      <p class="pay-step-label">Check your phone</p>
+      <div class="pay-approve-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2" stroke-linecap="round"/></svg>
+        <p>A prompt for <strong>KSH ${plan.price}</strong> (${plan.label}) has been sent to <strong>${escapeHtml(state.payPhone)}</strong>. Enter your M-Pesa PIN there to approve it.</p>
+      </div>
+      <p class="pay-note" id="payWaitStatus">Waiting for approval…</p>
+      <div class="pay-error" id="payError"></div>
+      <button type="button" class="pass-cancel" id="payCancelBtn" style="width:100%;">Cancel</button>`;
+    document.getElementById('payCancelBtn').addEventListener('click', () => {
+      state.stkPollAbort = true;
+      state.pendingReadItem = null;
+      hidePayGate();
+    });
+  }
+
+  async function pollStkStatus(invoiceId, plan){
+    state.stkPollAbort = false;
+    const startedAt = Date.now();
+    while(!state.stkPollAbort){
+      if(Date.now() - startedAt > STK_POLL_TIMEOUT_MS){
+        const statusEl = document.getElementById('payWaitStatus');
+        if(statusEl) statusEl.textContent = "This is taking longer than expected — check your phone, or cancel and try again.";
+      }
+      await new Promise(r => setTimeout(r, STK_POLL_INTERVAL_MS));
+      if(state.stkPollAbort) return;
+      try{
+        const res = await fetch(`${EDGE_FUNCTIONS_BASE}/stk-status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invoice_id: invoiceId }),
+        });
+        const data = await res.json();
+        if(data.state === 'COMPLETE'){
+          grantReadAccess(plan);
+          hidePayGate();
+          updateAccessStatusBar();
+          const item = state.pendingReadItem;
+          state.pendingReadItem = null;
+          if(item) openViewer(item);
+          return;
+        }
+        if(data.state === 'FAILED'){
+          const errEl = document.getElementById('payError');
+          if(errEl) errEl.textContent = 'Payment was not completed — cancelled or timed out on your phone.';
+          const statusEl = document.getElementById('payWaitStatus');
+          if(statusEl) statusEl.textContent = 'You can close this and try again.';
+          return;
+        }
+        // else PENDING — keep polling
+      } catch(err){
+        console.error(err);
+        // transient network error — keep polling, don't abort the loop
+      }
+    }
+  }
+
+  function readAccessUntil(){
+    const raw = localStorage.getItem(PAY_ACCESS_KEY);
+    const until = raw ? parseInt(raw, 10) : 0;
+    return isNaN(until) ? 0 : until;
+  }
+  function readAccessPlanLabel(){
+    return localStorage.getItem(PAY_ACCESS_PLAN_KEY) || '';
+  }
+  function hasReadAccess(){
+    return state.freeAccess || Date.now() < readAccessUntil();
+  }
+  function grantReadAccess(plan){
+    const until = Date.now() + plan.hours * 60 * 60 * 1000;
+    localStorage.setItem(PAY_ACCESS_KEY, String(until));
+    localStorage.setItem(PAY_ACCESS_PLAN_KEY, plan.label);
+    return until;
+  }
+  function formatRemaining(ms){
+    const mins = Math.max(0, Math.round(ms / 60000));
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  function showPayGate(item){
+    state.pendingReadItem = item || null;
+    if(!state.payPlan) state.payPlan = PAY_PLANS[0];
+    renderPayStep1();
+    els.payOverlay.classList.add('open');
+  }
+  function hidePayGate(){
+    state.stkPollAbort = true;
+    els.payOverlay.classList.remove('open');
+  }
+  els.payOverlay.addEventListener('click', e => { if(e.target === els.payOverlay){ state.pendingReadItem = null; hidePayGate(); } });
+
+  // ---- Persistent "your active time" status bar (Reading Room header) ----
+  function updateAccessStatusBar(){
+    if(!els.accessStatusBar) return;
+    const isRoom = state.role === 'room';
+    if(isRoom && state.freeAccess){
+      els.accessStatusBar.hidden = false;
+      els.accessStatusBar.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg> Free access is currently on — read anything, no charge`;
+      return;
+    }
+    if(isRoom && hasReadAccess()){
+      const msLeft = readAccessUntil() - Date.now();
+      const plan = readAccessPlanLabel();
+      els.accessStatusBar.hidden = false;
+      els.accessStatusBar.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round" stroke-linejoin="round"/></svg> Active time left: <strong>${formatRemaining(msLeft)}</strong>${plan ? ` (${plan} plan)` : ''}`;
+      return;
+    }
+    els.accessStatusBar.hidden = true;
+  }
+  setInterval(updateAccessStatusBar, 30000);
+
+  // Gate a request to actually read a document's contents. Staff (Filing
+  // Desk role) bypass the gate; everyone reading in the Reading Room needs
+  // either the global free-access toggle on, or a live paid window.
+  function requestRead(item){
+    if(state.role !== 'room' || hasReadAccess()){
+      openViewer(item);
+    } else {
+      showPayGate(item);
+    }
+  }
+
+  // ---- Free-access toggle (Filing Desk) ----
+  async function fetchSettings(){
+    try{
+      const { data, error } = await supabase
+        .from(SETTINGS_TABLE)
+        .select('free_access')
+        .eq('id', SETTINGS_ROW_ID)
+        .maybeSingle();
+      if(error) throw error;
+      state.freeAccess = !!(data && data.free_access);
+    } catch(err){
+      console.warn('Free-access settings not available yet:', err && (err.message || err));
+    }
+    updateAccessToggleUI();
+    updateAccessStatusBar();
+    render();
+  }
+  function updateAccessToggleUI(){
+    if(!els.freeAccessToggle) return;
+    els.freeAccessToggle.classList.toggle('on', state.freeAccess);
+    els.freeAccessToggle.setAttribute('aria-checked', String(state.freeAccess));
+    els.toggleLabelPaid.classList.toggle('active', !state.freeAccess);
+    els.toggleLabelFree.classList.toggle('active', state.freeAccess);
+    els.accessToggleDesc.innerHTML = state.freeAccess
+      ? `Currently <strong>free</strong> — anyone can open documents in the Reading Room without paying.`
+      : `Currently <strong>paid</strong> — readers pay KSH ${PAY_AMOUNT_KSH}/hr via M-Pesa to open documents.`;
+  }
+  async function toggleFreeAccess(){
+    const next = !state.freeAccess;
+    els.freeAccessToggle.disabled = true;
+    try{
+      const { error } = await supabase
+        .from(SETTINGS_TABLE)
+        .update({ free_access: next })
+        .eq('id', SETTINGS_ROW_ID);
+      if(error) throw error;
+      state.freeAccess = next;
+    } catch(err){
+      console.error(err);
+      alert("Couldn't update Reading Room access — make sure the app_settings table exists in Supabase (see the SQL comment above fetchSettings in the code).");
+    } finally {
+      els.freeAccessToggle.disabled = false;
+      updateAccessToggleUI();
+      render();
+    }
+  }
+  if(els.freeAccessToggle){
+    els.freeAccessToggle.addEventListener('click', toggleFreeAccess);
+  }
+
+  // ---- Subject field ----
+  function clearSelect(sel, placeholder){
+    sel.innerHTML = placeholder ? `<option value="">${escapeHtml(placeholder)}</option>` : '';
+  }
+
+  function updateUniSubjectValue(){
+    const parts = [els.fUni.value, els.fFaculty.value, els.fCourse.value, els.fUnit.value].filter(Boolean);
+    els.fSubject.value = parts.join(' — ');
+  }
+
+  function populateFacultyOptions(){
+    const uni = els.fUni.value;
+    const faculties = Object.keys(UNIVERSITIES_DATA[uni] || {});
+    clearSelect(els.fFaculty, faculties.length ? 'Select a faculty / college / school…' : 'No faculties filed yet for this university');
+    faculties.forEach(f => { const o = document.createElement('option'); o.value = f; o.textContent = f; els.fFaculty.appendChild(o); });
+    populateCourseOptions();
+  }
+  function populateCourseOptions(){
+    const uni = els.fUni.value, fac = els.fFaculty.value;
+    const courses = Object.keys((UNIVERSITIES_DATA[uni] || {})[fac] || {});
+    clearSelect(els.fCourse, courses.length ? 'Select a course…' : 'Select a faculty first');
+    courses.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; els.fCourse.appendChild(o); });
+    populateUnitOptions();
+  }
+  function populateUnitOptions(){
+    const uni = els.fUni.value, fac = els.fFaculty.value, course = els.fCourse.value;
+    const units = ((UNIVERSITIES_DATA[uni] || {})[fac] || {})[course] || [];
+    clearSelect(els.fUnit, units.length ? 'Select a unit…' : 'Select a course first');
+    units.forEach(u => { const o = document.createElement('option'); o.value = u; o.textContent = u; els.fUnit.appendChild(o); });
+    updateUniSubjectValue();
+  }
+
+  function initUniCascade(){
+    clearSelect(els.fUni, 'Select a university…');
+    Object.keys(UNIVERSITIES_DATA).forEach(u => { const o = document.createElement('option'); o.value = u; o.textContent = u; els.fUni.appendChild(o); });
+    populateFacultyOptions();
+  }
+  els.fUni.addEventListener('change', () => { populateFacultyOptions(); });
+  els.fFaculty.addEventListener('change', () => { populateCourseOptions(); });
+  els.fCourse.addEventListener('change', () => { populateUnitOptions(); });
+  els.fUnit.addEventListener('change', () => { updateUniSubjectValue(); });
+
+  function syncSubjectField(){
+    const level = els.fLevel.value;
+    const isUniversity = level === 'university';
+    els.uniCascadeUni.style.display = isUniversity ? '' : 'none';
+    els.uniCascadeFaculty.style.display = isUniversity ? '' : 'none';
+    els.uniCascadeCourse.style.display = isUniversity ? '' : 'none';
+    els.uniCascadeUnit.style.display = isUniversity ? '' : 'none';
+
+    if(isUniversity){
+      els.fSubjectLabel.textContent = 'Subject path (auto-filled below)';
+      els.fSubjectSelect.style.display = 'none';
+      els.fSubject.style.display = 'none';
+      initUniCascade();
+      return;
+    }
+
+    const subjects = SUBJECTS_BY_LEVEL[level];
+    if(subjects){
+      els.fSubjectLabel.textContent = 'Subject';
+      els.fSubjectSelect.innerHTML = `<option value="">Select a subject…</option>` +
+        subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+      els.fSubjectSelect.style.display = '';
+      els.fSubject.style.display = 'none';
+    } else {
+      els.fSubjectLabel.textContent = 'Subject / Course code';
+      els.fSubjectSelect.style.display = 'none';
+      els.fSubject.style.display = '';
+      els.fSubject.value = '';
+    }
+  }
+  els.fLevel.addEventListener('change', syncSubjectField);
+  syncSubjectField();
+
+  // ---- Upload (Filing Desk) ----
+  els.browseBtn.addEventListener('click', () => els.fileInput.click());
+  els.fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+  ['dragenter','dragover'].forEach(evt => els.dropPane.addEventListener(evt, e => { e.preventDefault(); els.dropPane.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(evt => els.dropPane.addEventListener(evt, e => { e.preventDefault(); els.dropPane.classList.remove('drag'); }));
+  els.dropPane.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if(f) handleFile(f); });
+
+  function handleFile(file){
+    if(!file) return;
+    state.pendingFile = file;
+    els.fileChip.style.display = 'block';
+    els.fileChip.textContent = `${file.name} · ${formatSize(file.size)}`;
+    els.stampBtn.disabled = false;
+    els.formNote.textContent = 'Ready to file';
+  }
+
+  els.form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if(!state.pendingFile) return;
+    const title = document.getElementById('fTitle').value.trim();
+    if(!title) return;
+    const category = document.getElementById('fCategory').value;
+    const level = document.getElementById('fLevel').value;
+    const file = state.pendingFile;
+
+    els.stampBtn.disabled = true;
+    els.formNote.textContent = 'Uploading…';
+
+    const storagePath = `${Date.now()}_${file.name}`;
+    try{
+      const { error: uploadError } = await supabase
+        .storage
+        .from(SUPABASE_BUCKET)
+        .upload(storagePath, file, { upsert: false });
+      if(uploadError) throw uploadError;
+
+      const { data: urlData } = supabase
+        .storage
+        .from(SUPABASE_BUCKET)
+        .getPublicUrl(storagePath);
+      const fileUrl = urlData.publicUrl;
+
+      els.formNote.textContent = 'Filing record…';
+      const count = state.items.filter(i => i.category === category).length;
+      if(level === 'university') updateUniSubjectValue();
+      const { error: insertError } = await supabase.from('items').insert({
+        title,
+        author: document.getElementById('fAuthor').value.trim(),
+        category,
+        level,
+        year: document.getElementById('fYear').value.trim(),
+        subject: (SUBJECTS_BY_LEVEL[level] ? els.fSubjectSelect.value : els.fSubject.value).trim(),
+        description: document.getElementById('fDesc').value.trim(),
+        file_name: file.name,
+        file_size: formatSize(file.size),
+        file_url: fileUrl,
+        storage_path: storagePath,
+        call_number: `${callPrefix[category]}-${100 + count}`,
+        filed_at: Date.now(),
+        comments: [],
+      });
+      if(insertError) throw insertError;
+      await fetchItems();
+
+      els.form.reset();
+      syncSubjectField();
+      state.pendingFile = null;
+      els.fileChip.style.display = 'none';
+      els.formNote.textContent = 'Attach a file to enable filing';
+    } catch(err){
+      console.error(err);
+      els.formNote.textContent = 'Error: ' + (err && (err.message || err.code || String(err)));
+      els.stampBtn.disabled = false;
+    }
+  });
+
+  // ---- Filters / search / sort (shared controls, per-role query) ----
+  function buildUniversityTree(){
+    return Object.keys(UNIVERSITIES_DATA).map(uni => {
+      const faculties = Object.keys(UNIVERSITIES_DATA[uni] || {});
+      const facultyHtml = faculties.length
+        ? faculties.map(fac => {
+            const courses = Object.keys((UNIVERSITIES_DATA[uni] || {})[fac] || {});
+            const courseHtml = courses.length
+              ? courses.map(course => `<button type="button" class="subject-menu-item" data-level="university" data-subject="${escapeHtml(uni + ' — ' + fac + ' — ' + course)}">${escapeHtml(course)}</button>`).join('')
+              : `<span class="subject-menu-empty">No courses filed yet</span>`;
+            return `<div class="level-menu-group" data-uni="${escapeHtml(uni)}" data-fac="${escapeHtml(fac)}">
+              <button type="button" class="subject-menu-item level-menu-parent" data-tree-toggle="1" data-level="university" data-subject="${escapeHtml(uni + ' — ' + fac)}">
+                <span>${escapeHtml(fac)}</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="level-submenu">${courseHtml}</div>
+            </div>`;
+          }).join('')
+        : `<span class="subject-menu-empty">No faculties filed yet</span>`;
+      return `<div class="level-menu-group" data-uni="${escapeHtml(uni)}">
+        <button type="button" class="subject-menu-item level-menu-parent" data-tree-toggle="1" data-level="university" data-subject="${escapeHtml(uni)}">
+          <span>${escapeHtml(uni)}</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="level-submenu">${facultyHtml}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function buildTVETTree(){
+    return Object.keys(TVET_DATA).map(tvet => {
+      const courses = TVET_DATA[tvet] || [];
+      const courseHtml = courses.length
+        ? courses.map(course => `<button type="button" class="subject-menu-item" data-level="college" data-subject="${escapeHtml(tvet + ' — ' + course)}">${escapeHtml(course)}</button>`).join('')
+        : `<span class="subject-menu-empty">No courses filed yet</span>`;
+      return `<div class="level-menu-group" data-tvet="${escapeHtml(tvet)}">
+        <button type="button" class="subject-menu-item level-menu-parent" data-tree-toggle="1" data-level="college" data-subject="${escapeHtml(tvet)}">
+          <span>${escapeHtml(tvet)}</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="level-submenu">${courseHtml}</div>
+      </div>`;
+    }).join('');
+  }
+
+  els.levelMenuPanel.querySelectorAll('.level-submenu').forEach(sub => {
+    const level = sub.dataset.submenu;
+    if(level === 'university'){
+      sub.innerHTML = buildUniversityTree();
+      return;
+    }
+    if(level === 'college'){
+      sub.innerHTML = buildTVETTree();
+      return;
+    }
+    const subjects = SUBJECTS_BY_LEVEL[level] || [];
+    sub.innerHTML = subjects.map(s => `<button type="button" class="subject-menu-item" data-level="${level}" data-subject="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join('');
+  });
+
+  function updateLevelMenuActiveStates(){
+    els.levelMenuPanel.querySelectorAll('.level-menu-item, .subject-menu-item').forEach(item => {
+      const isSubject = item.classList.contains('subject-menu-item');
+      const matches = isSubject
+        ? (item.dataset.level === state.level && item.dataset.subject === state.subject)
+        : (item.dataset.level === state.level && !state.subject);
+      item.classList.toggle('active', matches);
+    });
+  }
+
+  function setLevel(level, label, subject){
+    state.level = level;
+    state.subject = subject || '';
+    els.levelMenuLabel.textContent = subject ? `${label}: ${subject}` : label;
+    updateLevelMenuActiveStates();
+    closeLevelMenu();
+    render();
+  }
+  function toggleLevelGroup(level){
+    els.levelMenuPanel.querySelectorAll('.level-menu-group').forEach(group => {
+      if(group.dataset.level === level) group.classList.toggle('open');
+      else group.classList.remove('open');
+    });
+  }
+  function openLevelMenu(){
+    els.levelMenuPanel.classList.add('open');
+    els.levelMenuBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeLevelMenu(){
+    els.levelMenuPanel.classList.remove('open');
+    els.levelMenuBtn.setAttribute('aria-expanded', 'false');
+    els.levelMenuPanel.querySelectorAll('.level-menu-group.open').forEach(g => g.classList.remove('open'));
+  }
+  els.levelMenuBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if(els.levelMenuPanel.classList.contains('open')) closeLevelMenu();
+    else openLevelMenu();
+  });
+  els.levelMenuPanel.addEventListener('click', e => {
+    const treeToggleBtn = e.target.closest('[data-tree-toggle]');
+    if(treeToggleBtn){
+      setLevelKeepMenuOpen(treeToggleBtn.dataset.level, levelLabel[treeToggleBtn.dataset.level], treeToggleBtn.dataset.subject);
+      const group = treeToggleBtn.closest('.level-menu-group');
+      if(group) group.classList.toggle('open');
+      return;
+    }
+    const subjectBtn = e.target.closest('.subject-menu-item');
+    if(subjectBtn){
+      setLevel(subjectBtn.dataset.level, levelLabel[subjectBtn.dataset.level], subjectBtn.dataset.subject);
+      return;
+    }
+    const parentBtn = e.target.closest('.level-menu-parent');
+    if(parentBtn){
+      setLevelKeepMenuOpen(parentBtn.dataset.level, parentBtn.textContent.trim());
+      toggleLevelGroup(parentBtn.dataset.level);
+      return;
+    }
+    const btn = e.target.closest('.level-menu-item');
+    if(!btn) return;
+    setLevel(btn.dataset.level, btn.textContent.trim());
+  });
+  function setLevelKeepMenuOpen(level, label, subject){
+    state.level = level;
+    state.subject = subject || '';
+    els.levelMenuLabel.textContent = subject ? `${label}: ${subject}` : label;
+    updateLevelMenuActiveStates();
+    render();
+  }
+  document.addEventListener('click', e => {
+    if(!els.levelMenu.contains(e.target)) closeLevelMenu();
+  });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') closeLevelMenu(); });
+
+  els.tabs.addEventListener('click', e => {
+    const btn = e.target.closest('.tab');
+    if(!btn) return;
+    [...els.tabs.children].forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    state.filter = btn.dataset.filter;
+    render();
+  });
+  els.searchInput.addEventListener('input', e => { state.roomQuery = e.target.value.toLowerCase(); render(); });
+  els.deskSearchInput.addEventListener('input', e => { state.deskQuery = e.target.value.toLowerCase(); render(); });
+  els.sortSelect.addEventListener('change', e => { state.sort = e.target.value; render(); });
+
+  async function removeItem(id){
+    const item = state.items.find(i => i.id === id);
+    if(!item) return;
+    try{
+      const { error: delError } = await supabase.from('items').delete().eq('id', id);
+      if(delError) throw delError;
+      if(item.storagePath){
+        try{ await supabase.storage.from(SUPABASE_BUCKET).remove([item.storagePath]); } catch(e){ /* file may already be gone */ }
+      }
+      await fetchItems();
+    } catch(err){
+      console.error(err);
+      alert('Could not remove this item — check your connection.');
+    }
+  }
+
+  // ---- In-system document viewer ----
+  const ZOOM_MIN = 0.5, ZOOM_MAX = 3, ZOOM_STEP = 0.25;
+  let zoomLevel = 1;
+  let zoomLayer = null;
+
+  function clampZoom(z){ return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z)); }
+
+  function applyZoom(){
+    if(zoomLayer){
+      zoomLayer.style.transform = `scale(${zoomLevel})`;
+    }
+    els.zoomLevel.textContent = Math.round(zoomLevel * 100) + '%';
+    els.zoomOutBtn.disabled = zoomLevel <= ZOOM_MIN;
+    els.zoomInBtn.disabled = zoomLevel >= ZOOM_MAX;
+  }
+  function setZoom(z){
+    zoomLevel = clampZoom(z);
+    applyZoom();
+  }
+  function resetZoomState(){
+    zoomLevel = 1;
+    zoomLayer = null;
+    applyZoom();
+  }
+  els.zoomInBtn.addEventListener('click', () => setZoom(zoomLevel + ZOOM_STEP));
+  els.zoomOutBtn.addEventListener('click', () => setZoom(zoomLevel - ZOOM_STEP));
+  els.zoomResetBtn.addEventListener('click', () => setZoom(1));
+  els.viewerFrameWrap.addEventListener('wheel', e => {
+    if(!(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    setZoom(zoomLevel + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
+  }, { passive: false });
+  document.addEventListener('keydown', e => {
+    if(!els.viewerOverlay.classList.contains('open')) return;
+    if(!(e.ctrlKey || e.metaKey)) return;
+    if(e.key === '+' || e.key === '='){ e.preventDefault(); setZoom(zoomLevel + ZOOM_STEP); }
+    else if(e.key === '-'){ e.preventDefault(); setZoom(zoomLevel - ZOOM_STEP); }
+    else if(e.key === '0'){ e.preventDefault(); setZoom(1); }
+  });
+  (function(){
+    let pinchStartDist = null, pinchStartZoom = 1;
+    function dist(t0, t1){ return Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY); }
+    els.viewerFrameWrap.addEventListener('touchstart', e => {
+      if(e.touches.length === 2){
+        pinchStartDist = dist(e.touches[0], e.touches[1]);
+        pinchStartZoom = zoomLevel;
+      }
+    }, { passive: true });
+    els.viewerFrameWrap.addEventListener('touchmove', e => {
+      if(e.touches.length === 2 && pinchStartDist){
+        e.preventDefault();
+        const scale = dist(e.touches[0], e.touches[1]) / pinchStartDist;
+        setZoom(pinchStartZoom * scale);
+      }
+    }, { passive: false });
+    els.viewerFrameWrap.addEventListener('touchend', e => { if(e.touches.length < 2) pinchStartDist = null; });
+  })();
+
+  function fallbackMarkup(fileName, message){
+    return `<div class="viewer-fallback">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M14 3v5h5M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <strong>${escapeHtml(fileName)}</strong>
+      <span>${message}</span>
+    </div>`;
+  }
+
+  function renderDocx(item){
+    els.viewerFrameWrap.innerHTML = fallbackMarkup(item.fileName, 'Converting this document for in-app reading…');
+    if(typeof mammoth === 'undefined'){
+      els.viewerFrameWrap.innerHTML = fallbackMarkup(item.fileName, "The document reader couldn't load. It stays on file in the Stacks and isn't available for download.");
+      return;
+    }
+    fetch(item.fileUrl)
+      .then(res => res.arrayBuffer())
+      .then(buffer => mammoth.convertToHtml({ arrayBuffer: buffer }))
+      .then(result => {
+        if(els.viewerTitle.textContent !== item.title) return;
+        const wrap = document.createElement('div');
+        wrap.className = 'docx-render viewer-zoom-layer';
+        wrap.innerHTML = result.value;
+        els.viewerFrameWrap.innerHTML = '';
+        els.viewerFrameWrap.appendChild(wrap);
+        zoomLayer = wrap;
+        applyZoom();
+      })
+      .catch(() => {
+        els.viewerFrameWrap.innerHTML = fallbackMarkup(item.fileName, "This document couldn't be converted for in-app reading. It stays on file in the Stacks and isn't available for download.");
+      });
+  }
+
+  function renderPdf(item){
+    els.viewerFrameWrap.innerHTML = fallbackMarkup(item.fileName, 'Loading this document for in-app reading…');
+    if(typeof pdfjsLib === 'undefined'){
+      const iframe = document.createElement('iframe');
+      iframe.src = item.fileUrl + '#toolbar=0&navpanes=0';
+      iframe.title = item.title;
+      els.viewerFrameWrap.innerHTML = '';
+      els.viewerFrameWrap.appendChild(iframe);
+      return;
+    }
+    pdfjsLib.getDocument(item.fileUrl).promise.then(pdf => {
+      if(els.viewerTitle.textContent !== item.title) return;
+      const container = document.createElement('div');
+      container.className = 'pdf-render viewer-zoom-layer';
+      els.viewerFrameWrap.innerHTML = '';
+      els.viewerFrameWrap.appendChild(container);
+      zoomLayer = container;
+      applyZoom();
+      function renderPage(num){
+        if(els.viewerTitle.textContent !== item.title) return;
+        pdf.getPage(num).then(page => {
+          const viewport = page.getViewport({ scale: 1.75 });
+          const canvas = document.createElement('canvas');
+          canvas.className = 'pdf-page';
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          container.appendChild(canvas);
+          page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise.then(() => {
+            if(num < pdf.numPages) renderPage(num + 1);
+          });
+        });
+      }
+      renderPage(1);
+    }).catch(() => {
+      els.viewerFrameWrap.innerHTML = fallbackMarkup(item.fileName, "This document couldn't be loaded for in-app reading. It stays on file in the Stacks and isn't available for download.");
+    });
+  }
+
+  function openViewer(item){
+    els.viewerTitle.textContent = item.title;
+    els.viewerCallNumber.textContent = item.callNumber;
+    const ext = extOf(item.fileName);
+    els.viewerFrameWrap.innerHTML = '';
+    resetZoomState();
+    const zoomable = PDF_EXT.includes(ext) || DOCX_EXT.includes(ext) || ['png','jpg','jpeg','gif','webp','svg'].includes(ext);
+    els.zoomControls.style.display = zoomable ? '' : 'none';
+    if(PDF_EXT.includes(ext)){ renderPdf(item); }
+    else if(DOCX_EXT.includes(ext)){ renderDocx(item); }
+    else if(PREVIEWABLE_EXT.includes(ext)){
+      const isImage = ['png','jpg','jpeg','gif','webp','svg'].includes(ext);
+      if(isImage){
+        const wrap = document.createElement('div');
+        wrap.className = 'viewer-zoom-layer';
+        wrap.style.cssText = 'display:flex; align-items:center; justify-content:center; min-height:100%; padding:20px;';
+        const img = document.createElement('img');
+        img.src = item.fileUrl;
+        img.alt = item.title;
+        img.style.cssText = 'max-width:100%; height:auto; display:block;';
+        wrap.appendChild(img);
+        els.viewerFrameWrap.appendChild(wrap);
+        zoomLayer = wrap;
+        applyZoom();
+      } else {
+        const iframe = document.createElement('iframe');
+        iframe.src = item.fileUrl;
+        iframe.title = item.title;
+        els.viewerFrameWrap.appendChild(iframe);
+      }
+    } else {
+      els.viewerFrameWrap.innerHTML = fallbackMarkup(item.fileName, "This file type can't be previewed directly in the browser. It stays on file in the Stacks and isn't available for download.");
+    }
+    els.viewerOverlay.classList.add('open');
+  }
+  function closeViewer(){
+    els.viewerOverlay.classList.remove('open');
+    els.viewerFrameWrap.innerHTML = '';
+    resetZoomState();
+  }
+  els.viewerClose.addEventListener('click', closeViewer);
+  els.viewerOverlay.addEventListener('click', e => { if(e.target === els.viewerOverlay) closeViewer(); });
+  els.viewerFrameWrap.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('keydown', e => { if(e.key === 'Escape' && els.viewerOverlay.classList.contains('open')) closeViewer(); });
+
+  // ---- Comments (Reading Room) ----
+  function renderComments(item){
+    const list = document.getElementById('commentList');
+    if(!list) return;
+    if(!item.comments || !item.comments.length){
+      list.innerHTML = '<p class="comment-empty">No comments yet — be the first to leave one.</p>';
+      return;
+    }
+    list.innerHTML = item.comments.map(c => `
+      <div class="comment-item">
+        <div class="comment-meta">${escapeHtml(c.name)} · ${new Date(c.at).toLocaleString()}</div>
+        <div class="comment-text">${escapeHtml(c.text)}</div>
+      </div>`).join('');
+  }
+
+  // ---- Detail slip (Reading Room) ----
+  els.overlay.addEventListener('click', e => { if(e.target === els.overlay) closeSlip(); });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') closeSlip(); });
+  function closeSlip(){ els.overlay.classList.remove('open'); }
+  function openSlip(item){
+    els.slip.innerHTML = `
+      <button class="slip-close" id="slipClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18" stroke-linecap="round"/></svg></button>
+      <span class="call-number">${item.callNumber}</span><span class="level-tag">${levelLabel[item.level] || ''}</span>
+      <h3>${escapeHtml(item.title)}</h3>
+      <p class="catalog-meta">${[item.author, item.subject].filter(Boolean).join(' · ') || 'No further detail filed'}</p>
+      <p class="slip-desc">${escapeHtml(item.desc) || 'No description provided.'}</p>
+      <div class="slip-details">
+        <div><div class="slip-detail-label">Level</div><div class="slip-detail-value">${levelLabel[item.level] || '—'}</div></div>
+        <div><div class="slip-detail-label">Category</div><div class="slip-detail-value">${typeLabel[item.category]}</div></div>
+        <div><div class="slip-detail-label">Year</div><div class="slip-detail-value">${item.year || '—'}</div></div>
+        <div><div class="slip-detail-label">File</div><div class="slip-detail-value">${escapeHtml(item.fileName)}</div></div>
+        <div><div class="slip-detail-label">Size</div><div class="slip-detail-value">${item.fileSize}</div></div>
+      </div>
+      <button class="slip-download" id="slipRead" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 12s4-7 10.5-7 10.5 7 10.5 7-4 7-10.5 7-10.5-7-10.5-7Z" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3"/></svg>
+        ${state.role === 'room' && !hasReadAccess() ? `Pay KSH ${PAY_AMOUNT_KSH}/hr to read` : 'Read in Reading Room'}
+      </button>
+      ${state.role === 'room' && hasReadAccess() ? `<div class="pay-status"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg> ${state.freeAccess ? 'Free access is currently on' : `Reading access active — ${formatRemaining(readAccessUntil() - Date.now())} left`}</div>` : ''}
+      <div class="comment-section">
+        <div class="slip-detail-label">Comments</div>
+        <div class="comment-list" id="commentList"></div>
+        <form class="comment-form" id="commentForm">
+          <input type="text" id="commentName" placeholder="Your name (optional)" maxlength="60">
+          <textarea id="commentText" placeholder="Leave a comment about this item…" maxlength="600" required></textarea>
+          <button type="submit" class="stamp-btn comment-post-btn">Post comment</button>
+        </form>
+      </div>`;
+    document.getElementById('slipClose').addEventListener('click', closeSlip);
+    document.getElementById('slipRead').addEventListener('click', () => { closeSlip(); requestRead(item); });
+    renderComments(item);
+    document.getElementById('commentForm').addEventListener('submit', async function(e){
+      e.preventDefault();
+      const nameField = document.getElementById('commentName');
+      const textField = document.getElementById('commentText');
+      const text = textField.value.trim();
+      if(!text) return;
+      const comment = { name: nameField.value.trim() || 'Anonymous reader', text, at: Date.now() };
+      try{
+        const updatedComments = [...(item.comments||[]), comment];
+        const { error: commentError } = await supabase
+          .from('items')
+          .update({ comments: updatedComments })
+          .eq('id', item.id);
+        if(commentError) throw commentError;
+        item.comments = updatedComments;
+        textField.value = '';
+        nameField.value = '';
+        renderComments(item);
+        fetchItems();
+      } catch(err){
+        console.error(err);
+        alert('Could not post comment — check your connection.');
+      }
+    });
+    els.overlay.classList.add('open');
+  }
+
+  // ---- Render (reads from the shared state.items, synced from Supabase) ----
+  function render(){
+    const isRoom = state.role === 'room';
+    const q = isRoom ? state.roomQuery : state.deskQuery;
+
+    let list = state.items.filter(i => {
+      const matchesLevel = state.level === 'all' || i.level === state.level;
+      const matchesSubject = !state.subject
+        || ((state.level === 'university' || state.level === 'college')
+              ? (i.subject || '').toLowerCase().startsWith(state.subject.toLowerCase())
+              : (i.subject || '').toLowerCase() === state.subject.toLowerCase());
+      const matchesFilter = state.filter === 'all' || i.category === state.filter;
+      const matchesQuery = !q || i.title.toLowerCase().includes(q) || (i.author||'').toLowerCase().includes(q) || (i.subject||'').toLowerCase().includes(q);
+      return matchesLevel && matchesSubject && matchesFilter && matchesQuery;
+    });
+
+    if(isRoom){
+      if(state.sort === 'title') list = [...list].sort((a,b) => a.title.localeCompare(b.title));
+      else if(state.sort === 'year') list = [...list].sort((a,b) => (b.year||'0').localeCompare(a.year||'0'));
+      else list = [...list].sort((a,b) => b.filedAt - a.filedAt);
+    }
+
+    els.resultCount.textContent = isRoom ? `${list.length} result${list.length===1?'':'s'}` : '';
+
+    els.grid.innerHTML = '';
+    if(list.length === 0){
+      els.grid.innerHTML = `<div class="empty-state">
+        <h3>${state.items.length === 0 ? 'The shelf is empty' : 'No matches on this shelf'}</h3>
+        <p>${state.items.length === 0
+          ? (isRoom ? 'Nothing has been filed yet — check back once the desk has uploaded something.' : 'File your first e-book, periodical, or exam paper above to see it appear here — and in the Reading Room.')
+          : 'Try a different search term, level, or category.'}</p>
+      </div>`;
+    } else {
+      list.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'catalog-card';
+        if(isRoom) card.tabIndex = 0;
+        card.innerHTML = `
+          <span class="call-number">${item.callNumber}</span><span class="level-tag">${levelLabel[item.level] || ''}</span>
+          <h3>${escapeHtml(item.title)}</h3>
+          <p class="catalog-meta">${[item.author, item.subject, item.year].filter(Boolean).join(' · ') || 'No further detail filed'}</p>
+          <p class="catalog-desc">${escapeHtml(item.desc) || 'No description provided.'}</p>
+          <div class="card-footer">
+            <span class="type-stamp ${typeClass[item.category]}">${typeLabel[item.category]}</span>
+            ${isRoom
+              ? `<span class="read-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 12s4-7 10.5-7 10.5 7 10.5 7-4 7-10.5 7-10.5-7-10.5-7Z" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3"/></svg>${item.fileSize}</span>`
+              : `<div class="card-actions">
+                  <button class="icon-btn" title="Read ${escapeHtml(item.fileName)}" data-read="${item.id}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 12s4-7 10.5-7 10.5 7 10.5 7-4 7-10.5 7-10.5-7-10.5-7Z" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                  <button class="icon-btn" title="Remove from shelf" data-remove="${item.id}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-13" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>`}
+          </div>`;
+        if(isRoom){
+          card.addEventListener('click', () => openSlip(item));
+          card.addEventListener('keydown', e => { if(e.key === 'Enter') openSlip(item); });
+        }
+        els.grid.appendChild(card);
+      });
+    }
+
+    if(!isRoom){
+      els.grid.querySelectorAll('[data-remove]').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); removeItem(btn.dataset.remove); }));
+      els.grid.querySelectorAll('[data-read]').forEach(btn => btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const item = state.items.find(i => i.id === btn.dataset.read);
+        if(item) openViewer(item);
+      }));
+    }
+    els.statAll.textContent = state.items.length;
+    els.statLower.textContent = state.items.filter(i => i.level === 'lower').length;
+    els.statJunior.textContent = state.items.filter(i => i.level === 'junior').length;
+    els.statSenior.textContent = state.items.filter(i => i.level === 'senior').length;
+    els.statCollege.textContent = state.items.filter(i => i.level === 'college').length;
+    els.statUniversity.textContent = state.items.filter(i => i.level === 'university').length;
+    els.statEbook.textContent = state.items.filter(i => i.category === 'ebook').length;
+    els.statEjournal.textContent = state.items.filter(i => i.category === 'ejournal').length;
+    els.statExam.textContent = state.items.filter(i => i.category === 'exam').length;
+    els.footerCount.textContent = `${state.items.length} ITEM${state.items.length===1?'':'S'} ON SHELF`;
+  }
+
+  // ---- Fetch from Supabase ----
+  async function fetchItems(){
+    try{
+      const { data, error } = await supabase
+        .from('items')
+        .select('*')
+        .order('filed_at', { ascending: false });
+      if(error) throw error;
+      state.items = (data || []).map(row => ({
+        id: row.id,
+        title: row.title,
+        author: row.author,
+        category: row.category,
+        level: row.level,
+        year: row.year,
+        subject: row.subject,
+        desc: row.description,
+        fileName: row.file_name,
+        fileSize: row.file_size,
+        fileUrl: row.file_url,
+        storagePath: row.storage_path,
+        callNumber: row.call_number,
+        filedAt: row.filed_at,
+        comments: row.comments || [],
+      }));
+      render();
+    } catch(err){
+      console.error('Supabase sync error:', err);
+      els.resultCount.textContent = 'Sync error: ' + (err && (err.message || err.code || String(err)));
+    }
+  }
+
+  fetchItems();
+  fetchSettings();
+  setInterval(fetchItems, 20000); // light polling so other visitors' changes still show up
+  setInterval(fetchSettings, 20000); // keep the paid/free status in sync across visitors
+
+  // Start on the Reading Room — no password required to browse.
+  applyRole('room');
+})();
+</script>
+</body>
+</html>
